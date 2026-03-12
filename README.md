@@ -41,7 +41,8 @@ YoloFarm là hệ thống nông nghiệp thông minh kết hợp **AI** và **Io
 
 Dữ liệu cảm biến và trạng thái thiết bị được đồng bộ qua **Adafruit IO MQTT**:
 
-- **Dashboard**: https://io.adafruit.com/Chicong2005/groups/yolofarm
+- **Feed**: https://io.adafruit.com/Chicong2005/public  (lưu ý: các thiết bị nằm trong mục feeds -> yolofarm/<feed_name>)
+- **Dashboard**: https://io.adafruit.com/Chicong2005/dashboards/dhb-yolo-farm  (lưu ý: chỉ cấp quyền xem dashboard, muốn bật tắt thiết bị thì thực hiện trên giao diện)
 - **Username**: `Chicong2005`
 - **Feeds**: `temperature`, `humidity`, `soil-moisture`, `light`, `pump1`, `pump2`, `led-rgb`
 
