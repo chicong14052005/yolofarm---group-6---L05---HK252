@@ -1,0 +1,209 @@
+.user-filters {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-xl);
+  flex-wrap: wrap;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 260px;
+}
+
+.filter-pills {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.filter-pill {
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.filter-pill.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.filter-pill:hover:not(.active) {
+  background: var(--primary-alpha-10);
+  color: var(--primary);
+}
+
+.user-table-card {
+  overflow: hidden;
+  padding: 0;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-table th {
+  text-align: left;
+  padding: var(--space-md) var(--space-lg);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-input);
+}
+
+.user-table td {
+  padding: var(--space-md) var(--space-lg);
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-weight: 500;
+}
+
+.user-avatar-sm {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  background: var(--primary-alpha-20);
+  color: var(--primary);
+}
+
+.badge-info {
+  background: rgba(52, 152, 219, 0.15);
+  color: var(--info);
+}
+
+.badge-clickable {
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.badge-clickable:hover {
+  transform: scale(1.08);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.action-icon {
+  width: 32px; height: 32px;
+  border: none; background: transparent;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  color: var(--text-muted);
+}
+
+.action-icon.delete:hover {
+  background: rgba(231, 76, 60, 0.12);
+  color: var(--danger);
+}
+
+.action-icon.ban:hover {
+  background: rgba(231, 76, 60, 0.12);
+  color: var(--danger);
+}
+
+.action-icon.unban:hover {
+  background: var(--primary-alpha-10);
+  color: var(--primary);
+}
+
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-md) var(--space-lg);
+}
+
+.pagination {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+/* Desktop / Mobile toggle */
+.mobile-only { display: none; }
+
+@media (max-width: 740px) {
+  .desktop-only { display: none; }
+  .mobile-only { display: block; }
+
+  .user-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  .user-card {
+    padding: var(--space-md);
+  }
+  .user-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+  }
+  .user-card-top .user-cell {
+    gap: var(--space-sm);
+  }
+  .user-card-name {
+    display: block;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+  }
+  .user-card-email {
+    display: block;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  .user-card-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--border-light);
+  }
+}

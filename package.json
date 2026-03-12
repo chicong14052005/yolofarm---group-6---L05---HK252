@@ -1,0 +1,21 @@
+{
+  "name": "yolofarm",
+  "version": "1.0.0",
+  "description": "YoloFarm - Smart Agriculture System with AI & IoT",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "dev:client": "pnpm --filter client run dev",
+    "dev:server": "pnpm --filter server run dev",
+    "install:all": "pnpm install",
+    "build": "pnpm --filter client run build"
+  },
+  "keywords": [
+    "agriculture",
+    "iot",
+    "ai",
+    "smart-farming",
+    "yolofarm"
+  ],
+  "license": "ISC"
+}

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#2d9a76",
+                "background-light": "#f6f8f7",
+                "background-dark": "#131f1b",
+              },
+              fontFamily: {
+                "display": ["Plus Jakarta Sans"]
+              },
+              borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+            },
+          },
+        }
+    </script>
+<title>YoloFarm - AI Pest Detection</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="w-64 bg-white dark:bg-background-dark border-r border-primary/10 flex flex-col justify-between p-6">
+<div class="flex flex-col gap-8">
+<div class="flex items-center gap-3">
+<div class="bg-primary flex items-center justify-center rounded-lg size-10 text-white">
+<span class="material-symbols-outlined">eco</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">YoloFarm</h1>
+<p class="text-primary text-xs font-medium">Eco-Modern AI</p>
+</div>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary rounded-xl transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-semibold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary text-white rounded-xl shadow-lg shadow-primary/20" href="#">
+<span class="material-symbols-outlined">bug_report</span>
+<span class="text-sm font-semibold">Pest Detection</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary rounded-xl transition-colors" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="text-sm font-semibold">Crop Health</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary rounded-xl transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-semibold">Settings</span>
+</a>
+</nav>
+</div>
+<div class="bg-primary/5 p-4 rounded-xl border border-primary/10">
+<p class="text-xs text-primary font-bold uppercase tracking-wider mb-2">Plan Usage</p>
+<div class="w-full bg-primary/20 h-1.5 rounded-full mb-2">
+<div class="bg-primary h-1.5 rounded-full" style="width: 65%;"></div>
+</div>
+<p class="text-[10px] text-slate-500">650 / 1000 AI Scans remaining</p>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto p-8">
+<header class="flex justify-between items-center mb-8">
+<div>
+<h2 class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">AI Pest Detection</h2>
+<p class="text-slate-500 dark:text-slate-400 mt-1">Identify threats to your crops in real-time with high-precision computer vision.</p>
+</div>
+<div class="flex gap-4">
+<button class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl text-slate-600 dark:text-slate-300">
+<span class="material-symbols-outlined block">notifications</span>
+</button>
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden border-2 border-primary/20">
+<img alt="User Profile" data-alt="Portrait of a modern farmer professional" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBkXvADzm0QZIm_UxwLDI2qD_8PeV_87ggeC2fu_GiF0k2WxM_s4xRV7W1zaM3yimFH7lKhQCL16gXiQOHSjYYpG7_CPJtk0mkn_2ce2JxA3znWPSbg8eHsNk8Ul12pUnUe5lWAa5OdIqFWCt_X44kQmEB3wqlkl7Qx5XZdyNos6jrjwUC18lJ_cGU2zMaSJa6Sqbj6l6LILhbL2LRvZw_MSccAoeEOxkhLlosnWcK-muP-OF5uLqdL__b2n9nwiuySuIeIDqxgc5XN"/>
+</div>
+</div>
+</header>
+<div class="grid grid-cols-12 gap-8">
+<!-- Left: Upload & Scan Results -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-8">
+<!-- Upload Section -->
+<section class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">upload_file</span>
+                                Upload Crop Image
+                            </h3>
+<span class="text-xs font-medium bg-primary/10 text-primary px-3 py-1 rounded-full uppercase tracking-wide">Supported: JPG, PNG</span>
+</div>
+<div class="relative group cursor-pointer">
+<div class="flex flex-col items-center justify-center border-2 border-dashed border-primary/30 dark:border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary transition-all rounded-2xl p-12 text-center">
+<div class="bg-white dark:bg-slate-700 p-4 rounded-full shadow-md mb-4 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-primary text-4xl">add_photo_alternate</span>
+</div>
+<h4 class="text-lg font-bold text-slate-800 dark:text-slate-200">Drag and drop crop photo</h4>
+<p class="text-slate-500 text-sm max-w-xs mx-auto mt-2">Take a clear photo of the leaf or stem for more accurate detection results.</p>
+<button class="mt-6 px-8 py-3 bg-primary text-white font-bold rounded-xl shadow-lg shadow-primary/30 hover:shadow-primary/40 transition-shadow">
+                                    Select Image
+                                </button>
+</div>
+</div>
+</section>
+<!-- Scan Results Preview (If an image is "already uploaded" for demo) -->
+<section class="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden">
+<div class="flex items-center justify-between mb-6">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">analytics</span>
+                                Detection Details
+                            </h3>
+<div class="flex items-center gap-2 text-sm text-slate-500">
+<span class="material-symbols-outlined text-sm">schedule</span>
+                                Scanned 2 minutes ago
+                            </div>
+</div>
+<div class="flex flex-col md:flex-row gap-8">
+<div class="w-full md:w-1/2 aspect-square rounded-xl overflow-hidden relative border border-slate-200 dark:border-slate-700">
+<img alt="Scanned Leaf" class="w-full h-full object-cover" data-alt="Close up photo of a leaf with small insects on it" src="https://lh3.googleusercontent.com/aida-public/AB6AXuComAjFBYilK4u3Dr1NR4m1YtFb3x0FPmSptLRDsRbxEOdbWiVeegQQCN1KPwdX-87SEBcIFS_jLSYJ_YnRU5dDwntGCdnedSYpIV06Vu2DZqMnNKxhMTpBPPuOD_NYpen1un85sa1doBJjmHqT57SxwCPQzXZqN9h46TjZbKPPAD-Gy11l_RvqZP6rFA_l2XXlhrkbICVMV4o3jImy3pbwy7AlMbc94ritYq7NSSW2lO9-Q_N-5ArUAHfkRwsmFaOxjKmlIvZCRrEc"/>
+<div class="absolute inset-0 bg-primary/10 border-2 border-primary/50 m-12 rounded-lg flex items-center justify-center">
+<div class="bg-primary/90 text-white text-[10px] font-bold px-2 py-0.5 rounded absolute -top-3 left-4">APHID CLUSTER</div>
+</div>
+</div>
+<div class="w-full md:w-1/2 flex flex-col justify-center">
+<div class="flex items-center gap-6 mb-8">
+<!-- Confidence Ring -->
+<div class="relative flex items-center justify-center">
+<svg class="w-24 h-24 transform -rotate-90">
+<circle class="text-slate-100 dark:text-slate-700" cx="48" cy="48" fill="transparent" r="42" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary" cx="48" cy="48" fill="transparent" r="42" stroke="currentColor" stroke-dasharray="263.89" stroke-dashoffset="15.83" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-2xl font-black text-slate-800 dark:text-white leading-none">94%</span>
+<span class="text-[8px] font-bold text-slate-500 uppercase">Match</span>
+</div>
+</div>
+<div>
+<h4 class="text-xl font-extrabold text-slate-900 dark:text-white">Aphid Infestation</h4>
+<p class="text-primary font-semibold text-sm">Active Threat Level: High</p>
+</div>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center text-sm border-b border-slate-100 dark:border-slate-700 pb-2">
+<span class="text-slate-500">Crop Type</span>
+<span class="font-bold">Tomato (Lycopersicon)</span>
+</div>
+<div class="flex justify-between items-center text-sm border-b border-slate-100 dark:border-slate-700 pb-2">
+<span class="text-slate-500">Pest Common Name</span>
+<span class="font-bold">Green Peach Aphid</span>
+</div>
+<div class="flex justify-between items-center text-sm border-b border-slate-100 dark:border-slate-700 pb-2">
+<span class="text-slate-500">Estimated Count</span>
+<span class="font-bold text-red-500">~240 individuals</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right: Treatment Recommendations -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<h3 class="text-lg font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">medical_services</span>
+                        Recommended Treatments
+                    </h3>
+<!-- Treatment Card 1 -->
+<div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col gap-4">
+<div class="flex gap-4">
+<div class="h-16 w-16 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-3xl">nature</span>
+</div>
+<div class="flex flex-col justify-center">
+<h4 class="font-bold text-slate-900 dark:text-white">Neem Oil Spray</h4>
+<span class="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold uppercase w-fit">Organic</span>
+</div>
+</div>
+<p class="text-sm text-slate-500 leading-relaxed italic">"Mix 2 tbsps of neem oil with mild soap in a gallon of water. Spray directly on the undersides of the leaves."</p>
+<div class="flex items-center justify-between mt-2">
+<span class="text-xs font-bold text-primary">98% Efficacy</span>
+<button class="text-sm font-bold bg-primary text-white px-4 py-2 rounded-lg">View Guide</button>
+</div>
+</div>
+<!-- Treatment Card 2 -->
+<div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex flex-col gap-4">
+<div class="flex gap-4">
+<div class="h-16 w-16 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary text-3xl">pest_control_rodent</span>
+</div>
+<div class="flex flex-col justify-center">
+<h4 class="font-bold text-slate-900 dark:text-white">Ladybug Introduction</h4>
+<span class="text-[10px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold uppercase w-fit">Biological Control</span>
+</div>
+</div>
+<p class="text-sm text-slate-500 leading-relaxed italic">"Introduce Hippodamia convergens to your greenhouse. They are natural predators that feed on aphids."</p>
+<div class="flex items-center justify-between mt-2">
+<span class="text-xs font-bold text-primary">Eco-Friendly</span>
+<button class="text-sm font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-lg">Learn More</button>
+</div>
+</div>
+<!-- Expert Advice Banner -->
+<div class="bg-gradient-to-br from-primary to-emerald-800 p-6 rounded-2xl shadow-lg text-white mt-4 relative overflow-hidden">
+<div class="relative z-10">
+<h4 class="font-bold text-lg">Need Expert Advice?</h4>
+<p class="text-sm text-white/80 mt-2 mb-4">Connect with an agronomist for a customized pest management plan.</p>
+<button class="bg-white text-primary font-bold px-6 py-2 rounded-xl text-sm shadow-sm">Talk to Expert</button>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-white/10 text-9xl">support_agent</span>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
