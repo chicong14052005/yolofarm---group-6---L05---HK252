@@ -263,12 +263,14 @@
   border-bottom: 2px solid var(--border-light);
   background: var(--bg-card);
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  /* Bù trừ cho thanh cuộn dọc (scrollbar) của phần bên dưới (6px) */
+  padding-right: 10px;
 }
 
 .cal-time-gutter-header {
-  width: 46px;
+  width: 56px;
   flex-shrink: 0;
-
+  border-right: 1px solid transparent;
 }
 
 .cal-day-header {
