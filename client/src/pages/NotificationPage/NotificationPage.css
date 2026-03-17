@@ -138,6 +138,339 @@
   color: var(--primary-hover);
 }
 
+/* ===== Header Actions ===== */
+.header-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ===== Admin Notification Actions Bar ===== */
+@keyframes adminBarSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 200px;
+  }
+}
+
+.admin-notif-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
+  background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  overflow: visible;
+  animation: adminBarSlideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ===== Custom Select Dropdown ===== */
+.custom-select-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.custom-select-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease, transform 0.1s ease;
+}
+
+.custom-select-trigger.has-value {
+  color: var(--text-primary);
+}
+
+.custom-select-trigger:hover {
+  border-color: var(--text-muted);
+  background: var(--bg-primary);
+}
+
+.custom-select-trigger.open {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-alpha-10);
+  background: var(--bg-primary);
+}
+
+.custom-select-trigger:active {
+  transform: scale(0.99);
+}
+
+.custom-select-icon {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+
+.custom-select-trigger.open .custom-select-icon {
+  color: var(--primary);
+}
+
+.custom-select-text {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-select-chevron {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+}
+
+.custom-select-chevron.open {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+/* Dropdown panel */
+@keyframes selectDropdownOpen {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes selectOptionFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.custom-select-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg, 12px);
+  padding: 6px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.08);
+  z-index: 200;
+  animation: selectDropdownOpen 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top center;
+}
+
+.custom-select-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-select-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-select-dropdown::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+/* Dropdown option item */
+.custom-select-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-base, var(--radius-md));
+  cursor: pointer;
+  animation: selectOptionFadeIn 0.2s ease both;
+  transition: background 0.18s ease, transform 0.12s ease;
+}
+
+.custom-select-option:hover {
+  background: var(--primary-alpha-10);
+}
+
+.custom-select-option:active {
+  transform: scale(0.98);
+}
+
+.custom-select-option.active {
+  background: var(--primary-alpha-10);
+}
+
+/* Avatar in option */
+.custom-option-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover, var(--primary)));
+  color: var(--text-inverse);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-select-option:hover .custom-option-avatar {
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px var(--primary-alpha-20);
+}
+
+.custom-option-icon {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.custom-option-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.custom-option-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-option-email {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-option-check {
+  font-size: 1.15rem;
+  color: var(--primary);
+  flex-shrink: 0;
+  animation: badgePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.admin-notif-actions .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: transform 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.admin-notif-actions .btn:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.admin-notif-actions .btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.admin-notif-actions .btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.3);
+}
+
+/* ===== Confirm Delete Dialog ===== */
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dialogScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: overlayFadeIn 0.2s ease;
+  backdrop-filter: blur(2px);
+}
+
+.confirm-dialog {
+  background: var(--bg-primary);
+  padding: var(--space-xl) var(--space-2xl);
+  border-radius: var(--radius-lg);
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: dialogScaleIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.confirm-icon {
+  font-size: 2.5rem;
+  color: var(--danger);
+  margin-bottom: var(--space-md);
+}
+
+.confirm-dialog p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: var(--space-md);
+  justify-content: center;
+}
+
+.confirm-actions .btn {
+  min-width: 100px;
+  transition: transform 0.15s ease;
+}
+
+.confirm-actions .btn:active {
+  transform: scale(0.96);
+}
+
 /* ===== Mobile Responsive ===== */
 @media (max-width: 740px) {
   .notif-item {
@@ -167,5 +500,42 @@
   }
   .notif-tab {
     font-size: 0.8rem;
+  }
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: var(--space-xs);
+  }
+  .header-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .admin-notif-actions {
+    flex-direction: column;
+    gap: var(--space-sm);
+    padding: var(--space-md);
+  }
+  .custom-select-wrapper {
+    width: 100%;
+  }
+  .admin-notif-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* ===== Tablet Breakpoint ===== */
+@media (min-width: 741px) and (max-width: 1024px) {
+  .admin-notif-actions {
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+  }
+  .custom-select-trigger {
+    font-size: 0.84rem;
+    padding: 8px 12px;
+  }
+  .admin-notif-actions .btn {
+    font-size: 0.84rem;
+    padding: 8px 12px;
   }
 }

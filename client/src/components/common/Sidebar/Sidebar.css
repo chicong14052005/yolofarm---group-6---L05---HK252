@@ -166,14 +166,26 @@
   color: var(--primary);
 }
 
+/* ── User dropdown wrapper ── */
+.sidebar-user-wrapper {
+  position: relative;
+  margin-top: var(--space-xs);
+}
+
 .sidebar-user {
   display: flex;
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-sm);
-  margin-top: var(--space-xs);
   border-radius: var(--radius-base, var(--radius-md));
   background: var(--bg-input);
+  cursor: pointer;
+  transition: background var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.sidebar-user:hover {
+  background: var(--primary-alpha-10);
+  box-shadow: 0 0 0 1px var(--primary-alpha-20);
 }
 
 .user-avatar {
@@ -211,20 +223,111 @@
   color: var(--text-muted);
 }
 
-.logout-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px;
-  border-radius: var(--radius-sm);
-  background: transparent;
+/* Chevron arrow — rotates on open */
+.user-menu-chevron {
+  font-size: 1.2rem;
   color: var(--text-muted);
-  font-size: 1.1rem;
-  transition: all var(--transition-fast);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), color var(--transition-fast);
+  flex-shrink: 0;
 }
 
-.logout-btn:hover {
-  background: rgba(231, 76, 60, 0.1);
+.user-menu-chevron.open {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+/* ── Dropdown popup ── */
+@keyframes dropdownFadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.user-dropdown {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg, 12px);
+  padding: 6px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  z-index: 150;
+  animation: dropdownFadeSlide 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: bottom center;
+}
+
+/* ── Dropdown items ── */
+.user-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-base, var(--radius-md));
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.user-dropdown-item:hover {
+  background: var(--primary-alpha-10);
+  color: var(--primary);
+}
+
+.user-dropdown-item.active {
+  background: var(--primary-alpha-10);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* Flag images */
+.dropdown-flag {
+  width: 22px;
+  height: 16px;
+  object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
+/* Checkmark for active locale */
+.dropdown-check {
+  margin-left: auto;
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+
+/* Icon inside dropdown items */
+.dropdown-item-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+/* Divider */
+.user-dropdown-divider {
+  height: 1px;
+  background: var(--border-light);
+  margin: 4px 8px;
+}
+
+/* Logout item — danger color on hover */
+.user-dropdown-item.logout:hover {
+  background: rgba(231, 76, 60, 0.08);
+  color: var(--danger);
+}
+
+.user-dropdown-item.logout:hover .dropdown-item-icon {
   color: var(--danger);
 }
 

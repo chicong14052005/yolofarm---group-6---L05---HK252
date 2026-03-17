@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { io as socketIO } from 'socket.io-client';
 import Sidebar from '../../components/common/Sidebar/Sidebar';
 import { useLanguage } from '../../context/LanguageContext';
@@ -14,6 +14,10 @@ interface Notification {
   id: number; user_id: number; type: string; title: string;
   message: string; is_read: boolean; is_saved: boolean; created_at: string;
   user_name?: string;
+}
+
+interface UserOption {
+  id: number; full_name: string; email: string;
 }
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -33,6 +37,18 @@ const NotificationPage = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [filter, setFilter] = useState('all');
 
+  // Delete all states
+  const [users, setUsers] = useState<UserOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<'mine' | 'user' | 'all'>('mine');
+
+  // Custom dropdown state
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isAdmin = user?.role === 'admin';
+
   const fetchNotifications = async (f: string = filter) => {
     try {
       const { data } = await api.get(`/notifications?filter=${f}`);
@@ -44,6 +60,24 @@ const NotificationPage = () => {
   };
 
   useEffect(() => { fetchNotifications(); }, [filter]);
+
+  // Fetch users list for admin dropdown
+  useEffect(() => {
+    if (isAdmin) {
+      api.get('/users').then(({ data }) => setUsers(data)).catch(() => {});
+    }
+  }, [isAdmin]);
+
+  // Close custom dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Socket.IO: auto-refresh khi nhận notification mới
   useEffect(() => {
@@ -74,6 +108,24 @@ const NotificationPage = () => {
     fetchNotifications();
   };
 
+  const deleteAllNotifications = async () => {
+    try {
+      if (deleteTarget === 'mine') {
+        await api.delete('/notifications/delete-all');
+      } else if (deleteTarget === 'user' && selectedUserId) {
+        await api.delete('/notifications/admin/delete-all', { data: { userId: selectedUserId } });
+      } else if (deleteTarget === 'all') {
+        await api.delete('/notifications/admin/delete-all');
+      }
+      setShowDeleteConfirm(false);
+      setSelectedUserId('');
+      toast.success(t('notifications.allDeleted'));
+      fetchNotifications();
+    } catch {
+      toast.error(t('common.error'));
+    }
+  };
+
   const timeAgo = (d: string) => {
     const diff = Date.now() - new Date(d).getTime();
     const mins = Math.floor(diff / 60000);
@@ -92,10 +144,76 @@ const NotificationPage = () => {
             <h1 className="page-title">{t('notifications.title')}</h1>
             <p className="page-subtitle">{t('notifications.subtitle')}</p>
           </div>
-          <button className="btn btn-secondary" onClick={markAllAsRead}>
-            <HiOutlineBell /> {t('notifications.markAsRead')}
-          </button>
+          <div className="header-actions">
+            <button className="btn btn-secondary" onClick={markAllAsRead}>
+              <HiOutlineBell /> {t('notifications.markAsRead')}
+            </button>
+            <button className="btn btn-danger" onClick={() => { setDeleteTarget(isAdmin ? 'all' : 'mine'); setShowDeleteConfirm(true); }}>
+              <HiOutlineTrash /> {t('notifications.deleteAll')}
+            </button>
+          </div>
         </header>
+
+        {/* Admin: custom dropdown to select user & delete notifications */}
+        {isAdmin && (
+          <div className="admin-notif-actions">
+            <div className="custom-select-wrapper" ref={dropdownRef}>
+              <button
+                className={`custom-select-trigger ${dropdownOpen ? 'open' : ''} ${selectedUserId ? 'has-value' : ''}`}
+                onClick={() => setDropdownOpen(prev => !prev)}
+              >
+                <span className="material-symbols-outlined custom-select-icon">person_search</span>
+                <span className="custom-select-text">
+                  {selectedUserId
+                    ? users.find(u => String(u.id) === selectedUserId)?.full_name || ''
+                    : t('notifications.selectUser')}
+                </span>
+                <span className={`material-symbols-outlined custom-select-chevron ${dropdownOpen ? 'open' : ''}`}>
+                  expand_more
+                </span>
+              </button>
+
+              {dropdownOpen && (
+                <div className="custom-select-dropdown">
+                  <div
+                    className={`custom-select-option ${selectedUserId === '' ? 'active' : ''}`}
+                    onClick={() => { setSelectedUserId(''); setDropdownOpen(false); }}
+                  >
+                    <span className="material-symbols-outlined custom-option-icon">group</span>
+                    <span>{t('notifications.selectUser')}</span>
+                  </div>
+                  {users.map((u, i) => (
+                    <div
+                      key={u.id}
+                      className={`custom-select-option ${String(u.id) === selectedUserId ? 'active' : ''}`}
+                      style={{ animationDelay: `${i * 30}ms` }}
+                      onClick={() => { setSelectedUserId(String(u.id)); setDropdownOpen(false); }}
+                    >
+                      <div className="custom-option-avatar">
+                        {u.full_name?.charAt(0) || 'U'}
+                      </div>
+                      <div className="custom-option-info">
+                        <span className="custom-option-name">{u.full_name}</span>
+                        <span className="custom-option-email">{u.email}</span>
+                      </div>
+                      {String(u.id) === selectedUserId && (
+                        <span className="material-symbols-outlined custom-option-check">check_circle</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              className="btn btn-danger"
+              onClick={() => { setDeleteTarget('user'); setShowDeleteConfirm(true); }}
+              disabled={!selectedUserId}
+            >
+              <HiOutlineTrash /> {t('notifications.deleteUserNotifs')}
+            </button>
+          </div>
+        )}
 
         <div className="notif-tabs">
           <button className={`notif-tab ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>
@@ -133,6 +251,24 @@ const NotificationPage = () => {
           ))}
           {notifications.length === 0 && <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>{t('notifications.noNotifications')}</p>}
         </div>
+
+        {/* Confirm Delete Dialog */}
+        {showDeleteConfirm && (
+          <div className="confirm-overlay" onClick={() => setShowDeleteConfirm(false)}>
+            <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
+              <span className="material-symbols-outlined confirm-icon">warning</span>
+              <p>{t('notifications.deleteConfirmMsg')}</p>
+              <div className="confirm-actions">
+                <button className="btn btn-danger" onClick={deleteAllNotifications}>
+                  {t('notifications.confirmDelete')}
+                </button>
+                <button className="btn btn-secondary" onClick={() => setShowDeleteConfirm(false)}>
+                  {t('notifications.cancelDelete')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -16,6 +16,8 @@ const userRoutes = require('./routes/userRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const termsRoutes = require('./routes/termsRoutes');
 const preferencesRoutes = require('./routes/preferencesRoutes');
+const profileRoutes = require('./routes/profileRoutes');
+const privacyPolicyRoutes = require('./routes/privacyPolicyRoutes');
 
 const app = express();
 
@@ -38,6 +40,8 @@ app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/terms', termsRoutes);
 app.use('/api/preferences', preferencesRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/privacy-policy', privacyPolicyRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

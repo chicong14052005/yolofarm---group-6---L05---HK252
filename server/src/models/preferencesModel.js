@@ -7,13 +7,17 @@ const PreferencesModel = {
   },
   async upsert(userId, prefs) {
     const { theme, locale, primary_color, border_radius, layout_mode, font_family } = prefs;
+    const values = [
+      theme || 'light', locale || 'vi', primary_color || '#2BAE66',
+      border_radius || 8, layout_mode || 'desktop', font_family || "'Inter'"
+    ];
     await db.query(
       `INSERT INTO user_preferences (user_id, theme, locale, primary_color, border_radius, layout_mode, font_family)
        VALUES (?, ?, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE theme=VALUES(theme), locale=VALUES(locale),
-       primary_color=VALUES(primary_color), border_radius=VALUES(border_radius),
-       layout_mode=VALUES(layout_mode), font_family=VALUES(font_family)`,
-      [userId, theme || 'light', locale || 'vi', primary_color || '#2BAE66', border_radius || 8, layout_mode || 'desktop', font_family || "'Inter'"]
+       ON DUPLICATE KEY UPDATE
+         theme = ?, locale = ?, primary_color = ?,
+         border_radius = ?, layout_mode = ?, font_family = ?`,
+      [userId, ...values, ...values]
     );
   }
 };

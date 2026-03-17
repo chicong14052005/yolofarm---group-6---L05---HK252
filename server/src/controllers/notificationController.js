@@ -43,6 +43,23 @@ const notificationController = {
       await NotificationModel.delete(req.params.id);
       res.json({ message: 'Đã xóa thông báo' });
     } catch (err) { res.status(500).json({ error: err.message }); }
+  },
+  async deleteAllMine(req, res) {
+    try {
+      await NotificationModel.deleteAllByUser(req.user.id);
+      res.json({ message: 'Đã xóa tất cả thông báo' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+  },
+  async adminDeleteAll(req, res) {
+    try {
+      const { userId } = req.body;
+      if (userId) {
+        await NotificationModel.deleteAllByUser(userId);
+      } else {
+        await NotificationModel.deleteAll();
+      }
+      res.json({ message: 'Đã xóa thông báo' });
+    } catch (err) { res.status(500).json({ error: err.message }); }
   }
 };
 

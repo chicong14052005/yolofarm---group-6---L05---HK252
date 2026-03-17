@@ -11,5 +11,6 @@ router.put('/:id', authMiddleware, roleMiddleware('admin'), userController.updat
 router.delete('/:id', authMiddleware, roleMiddleware('admin'), userController.delete);
 router.patch('/:id/role', authMiddleware, roleMiddleware('admin'), userController.updateRole);
 router.patch('/:id/ban', authMiddleware, roleMiddleware('admin'), userController.toggleBan);
+router.patch('/:id/info', authMiddleware, roleMiddleware('admin'), userController.adminUpdateUser);
 
 module.exports = router;

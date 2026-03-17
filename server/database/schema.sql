@@ -5,6 +5,7 @@ CREATE DATABASE IF NOT EXISTS yolofarm CHARACTER SET utf8mb4 COLLATE utf8mb4_uni
 USE yolofarm;
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS privacy_policy;
 DROP TABLE IF EXISTS terms;
 DROP TABLE IF EXISTS user_preferences;
 DROP TABLE IF EXISTS settings;
@@ -314,7 +315,65 @@ INSERT INTO
     )
 VALUES (
         'Điều khoản sử dụng YoloFarm',
-        'Chào mừng bạn đến với YoloFarm. Bằng việc sử dụng dịch vụ của chúng tôi, bạn đồng ý tuân thủ các điều khoản sau:\n\n1. **Quyền sử dụng**: Bạn được cấp quyền sử dụng hệ thống để giám sát và điều khiển nông trại.\n2. **Bảo mật**: Bạn có trách nhiệm bảo vệ thông tin đăng nhập.\n3. **Dữ liệu**: Dữ liệu cảm biến được lưu trữ và sử dụng cho mục đích phân tích.\n4. **Thiết bị**: Việc điều khiển thiết bị từ xa phải được thực hiện có trách nhiệm.',
+        '# Chính sách bảo mật Smart Farm
+
+**Smart Farm** cam kết bảo vệ quyền riêng tư và dữ liệu cá nhân của bạn một cách tối đa. Chính sách bảo mật này mô tả chi tiết cách thức chúng tôi thu thập, sử dụng, lưu trữ và bảo vệ thông tin cá nhân của bạn khi bạn sử dụng hệ thống nông nghiệp thông minh của chúng tôi.
+
+## 1. Thu thập dữ liệu
+Hệ thống của chúng tôi thu thập các loại thông tin sau:
+* **Thông tin tài khoản:** Tên đăng nhập, địa chỉ email, ảnh đại diện và mật khẩu đã được mã hóa.
+* **Dữ liệu IoT & Cảm biến:** Nhiệt độ, độ ẩm, ánh sáng và các chỉ số môi trường khác được ghi nhận từ hệ thống phần cứng.
+* **Lịch sử hoạt động:** Nhật ký điều khiển thiết bị, lịch tưới tự động và các thao tác trên ứng dụng.
+
+## 2. Sử dụng dữ liệu
+Dữ liệu thu thập được sử dụng cho các mục đích:
+* Vận hành và duy trì tính ổn định của hệ thống Smart Farm.
+* Cung cấp dữ liệu cho các mô hình phân tích AI nhằm đưa ra dự đoán và gợi ý chăm sóc cây trồng hiệu quả hơn.
+* Cải thiện trải nghiệm người dùng và nâng cấp các dịch vụ trong tương lai.
+
+## 3. Bảo mật dữ liệu
+Sự an toàn của dữ liệu là ưu tiên hàng đầu của chúng tôi. Mọi dữ liệu cá nhân và thông số cảm biến đều được mã hóa trong quá trình truyền tải và lưu trữ an toàn trên cơ sở dữ liệu.
+
+## 4. Quyền của người dùng
+Bạn hoàn toàn làm chủ dữ liệu của mình. Bạn có quyền:
+* Truy cập và xem xét lại các thông tin cá nhân đang được lưu trữ.
+* Chỉnh sửa thông tin bất cứ lúc nào thông qua trang Cài đặt.
+* Yêu cầu vô hiệu hóa tài khoản hoặc xóa bỏ hoàn toàn dữ liệu cá nhân khỏi hệ thống.
+
+## 5. Chia sẻ dữ liệu
+**Smart Farm** cam kết tuyệt đối không bán, cho thuê hoặc chia sẻ dữ liệu cá nhân của bạn với bất kỳ bên thứ ba nào, trừ khi có sự đồng ý rõ ràng từ bạn hoặc khi có yêu cầu hợp pháp từ cơ quan chức năng.',
+        1,
+        1,
+        TRUE
+    );
+
+-- Bảng chính sách bảo mật
+CREATE TABLE IF NOT EXISTS privacy_policy (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    content_vi TEXT,
+    content_en TEXT,
+    version INT DEFAULT 1,
+    created_by INT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
+);
+
+-- Chính sách bảo mật mặc định
+INSERT INTO
+    privacy_policy (
+        title,
+        content,
+        version,
+        created_by,
+        is_active
+    )
+VALUES (
+        'Chính sách bảo mật YoloFarm',
+        'YoloFarm cam kết bảo vệ quyền riêng tư của bạn. Chính sách này mô tả cách chúng tôi thu thập, sử dụng và bảo vệ thông tin cá nhân của bạn.\n\n1. **Thu thập dữ liệu**: Chúng tôi thu thập thông tin tài khoản, dữ liệu cảm biến và lịch sử hoạt động.\n2. **Sử dụng dữ liệu**: Dữ liệu được sử dụng để vận hành hệ thống, phân tích AI và cải thiện dịch vụ.\n3. **Bảo mật dữ liệu**: Mọi dữ liệu được mã hóa và lưu trữ an toàn trên hệ thống.\n4. **Quyền của bạn**: Bạn có quyền truy cập, chỉnh sửa hoặc yêu cầu xóa dữ liệu cá nhân.\n5. **Chia sẻ dữ liệu**: Chúng tôi không chia sẻ dữ liệu cá nhân với bên thứ ba trừ khi có sự đồng ý của bạn.',
         1,
         1,
         TRUE

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/Sidebar/Sidebar';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
-import { HiOutlineTrash } from 'react-icons/hi';
+import { HiOutlineTrash, HiOutlinePencil } from 'react-icons/hi';
 import { MdOutlineBlock, MdOutlineCheckCircle } from 'react-icons/md';
 import { toast } from 'react-toastify';
 import ConfirmModal from '../../components/common/ConfirmModal/ConfirmModal';
@@ -13,6 +13,7 @@ import './UserManagementPage.css';
 interface User {
   id: number; username: string; email: string; full_name: string;
   role: string; status: string; avatar_url: string; created_at: string;
+  google_id?: string;
 }
 
 const UserManagementPage = () => {
@@ -22,6 +23,12 @@ const UserManagementPage = () => {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+
+  // Edit user state
+  const [editTarget, setEditTarget] = useState<User | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
     api.get('/users').then(({ data }) => setUsers(data)).catch(() => {});
@@ -81,6 +88,42 @@ const UserManagementPage = () => {
       );
     } catch {
       toast.error(t('userManagement.banError'));
+    }
+  };
+
+  // Edit user
+  const handleEditClick = (u: User) => {
+    setEditTarget(u);
+    setEditName(u.full_name || '');
+    setEditPassword('');
+  };
+
+  const handleEditSave = async () => {
+    if (!editTarget) return;
+    if (!editName.trim() && !editPassword) {
+      toast.error(t('userManagement.editNothingProvided'));
+      return;
+    }
+    if (editPassword && editPassword.length < 6) {
+      toast.error(t('userManagement.passwordTooShort'));
+      return;
+    }
+    setEditSaving(true);
+    try {
+      const payload: Record<string, string> = {};
+      if (editName.trim()) payload.full_name = editName.trim();
+      if (editPassword) payload.password = editPassword;
+      await api.patch(`/users/${editTarget.id}/info`, payload);
+      if (editName.trim()) {
+        setUsers(prev => prev.map(u => u.id === editTarget.id ? { ...u, full_name: editName.trim() } : u));
+      }
+      toast.success(t('userManagement.userUpdated').replace('{name}', editName.trim() || editTarget.full_name || editTarget.username));
+      setEditTarget(null);
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || t('userManagement.updateError');
+      toast.error(message);
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -162,6 +205,13 @@ const UserManagementPage = () => {
                     <td>
                       <div className="table-actions">
                         <button
+                          className="action-icon edit"
+                          onClick={() => handleEditClick(u)}
+                          title={t('userManagement.editUser')}
+                        >
+                          <HiOutlinePencil />
+                        </button>
+                        <button
                           className={`action-icon ${u.status === 'banned' ? 'unban' : 'ban'}`}
                           onClick={() => toggleBan(u)}
                           title={u.id === currentUser?.id ? t('userManagement.cannotBanSelf') : (u.status === 'banned' ? t('userManagement.unban') : t('userManagement.ban'))}
@@ -213,6 +263,13 @@ const UserManagementPage = () => {
                   <span style={{ color: st.color, fontSize: '0.8rem' }}>● {st.label}</span>
                   <div className="table-actions">
                     <button
+                      className="action-icon edit"
+                      onClick={() => handleEditClick(u)}
+                      title={t('userManagement.editUser')}
+                    >
+                      <HiOutlinePencil />
+                    </button>
+                    <button
                       className={`action-icon ${u.status === 'banned' ? 'unban' : 'ban'}`}
                       onClick={() => toggleBan(u)}
                     >
@@ -232,6 +289,67 @@ const UserManagementPage = () => {
             </span>
           </div>
         </div>
+
+        {/* Edit User Modal */}
+        {editTarget && (
+          <div className="edit-user-overlay" onClick={() => setEditTarget(null)}>
+            <div className="edit-user-dialog" onClick={e => e.stopPropagation()}>
+              <div className="edit-user-header">
+                <span className="material-symbols-outlined text-primary">manage_accounts</span>
+                <h3>{t('userManagement.editUserTitle').replace('{name}', editTarget.full_name || editTarget.username)}</h3>
+                {editTarget.google_id && (
+                  <span className="google-badge">
+                    <span className="google-badge-g">G</span>
+                    Google
+                  </span>
+                )}
+                <button className="edit-close-btn" onClick={() => setEditTarget(null)}>
+                  <span className="material-symbols-outlined">close</span>
+                </button>
+              </div>
+              <div className="edit-user-body">
+                <div className="form-group">
+                  <label className="form-label">{t('userManagement.newFullName')}</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
+                    placeholder={editTarget.full_name || editTarget.username}
+                  />
+                </div>
+                {editTarget.google_id ? (
+                  <div className="google-password-notice">
+                    <span className="material-symbols-outlined">info</span>
+                    <p>{t('userManagement.googlePasswordDisabled')}</p>
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label className="form-label">{t('userManagement.newPassword')}</label>
+                    <input
+                      type="password"
+                      className="form-input"
+                      value={editPassword}
+                      onChange={e => setEditPassword(e.target.value)}
+                      placeholder={t('userManagement.newPasswordHint')}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="edit-user-footer">
+                <button className="btn btn-primary" onClick={handleEditSave} disabled={editSaving}>
+                  {editSaving
+                    ? <span className="material-symbols-outlined spin-icon">progress_activity</span>
+                    : <span className="material-symbols-outlined">save</span>}
+                  {t('userManagement.saveChanges')}
+                </button>
+                <button className="btn btn-secondary" onClick={() => setEditTarget(null)}>
+                  {t('userManagement.cancelEdit')}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Confirm Modal for Delete */}
         <ConfirmModal

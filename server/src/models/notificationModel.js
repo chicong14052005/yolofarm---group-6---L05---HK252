@@ -51,6 +51,12 @@ const NotificationModel = {
   },
   async delete(id) {
     await db.query('DELETE FROM notifications WHERE id = ?', [id]);
+  },
+  async deleteAllByUser(userId) {
+    await db.query('DELETE FROM notifications WHERE user_id = ?', [userId]);
+  },
+  async deleteAll() {
+    await db.query('DELETE FROM notifications');
   }
 };
 

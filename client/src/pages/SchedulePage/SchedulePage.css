@@ -386,6 +386,67 @@
   background-image: none !important;
 }
 
+/* Theme-aware grid contrast */
+[data-theme="dark"] .cal-day-col {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.12) 0px, rgba(255,255,255,0.12) 1px,
+      transparent 1px, transparent 30px,
+      rgba(255,255,255,0.05) 30px, rgba(255,255,255,0.05) 31px,
+      transparent 31px, transparent 60px
+    );
+}
+[data-theme="dark"] .cal-day-col.today {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255,255,255,0.12) 0px, rgba(255,255,255,0.12) 1px,
+      transparent 1px, transparent 30px,
+      rgba(255,255,255,0.05) 30px, rgba(255,255,255,0.05) 31px,
+      transparent 31px, transparent 60px
+    );
+}
+[data-theme="dark"] .cal-day-col.no-grid {
+  background-image: none !important;
+}
+
+[data-theme="light"] .cal-day-col {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 1px,
+      transparent 1px, transparent 30px,
+      rgba(0,0,0,0.08) 30px, rgba(0,0,0,0.08) 31px,
+      transparent 31px, transparent 60px
+    );
+}
+[data-theme="light"] .cal-day-col.today {
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 1px,
+      transparent 1px, transparent 30px,
+      rgba(0,0,0,0.08) 30px, rgba(0,0,0,0.08) 31px,
+      transparent 31px, transparent 60px
+    );
+}
+[data-theme="light"] .cal-day-col.no-grid {
+  background-image: none !important;
+}
+
+[data-theme="light"] .cal-day-col {
+  border-left-color: rgba(0,0,0,0.18);
+}
+
+[data-theme="light"] .cal-time-gutter {
+  border-right-color: rgba(0,0,0,0.18);
+}
+
+[data-theme="light"] .cal-day-headers {
+  border-bottom-color: rgba(0,0,0,0.18);
+}
+
 /* ===== Current Time Indicator ===== */
 .cal-now-line {
   position: absolute;

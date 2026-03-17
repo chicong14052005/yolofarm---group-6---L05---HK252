@@ -9,6 +9,7 @@ export interface User {
   role: UserRole;
   status: UserStatus;
   avatar_url?: string;
+  google_id?: string;
   created_at: string;
 }
 

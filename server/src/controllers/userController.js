@@ -2,6 +2,7 @@ const UserModel = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 const pool = require('../config/db');
 const NotificationModel = require('../models/notificationModel');
+const PreferencesModel = require('../models/preferencesModel');
 const socketManager = require('../config/socketManager');
 
 const userController = {
@@ -137,6 +138,94 @@ const userController = {
       }
 
       res.json(user);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  },
+
+  // PATCH /users/:id/info — Admin đổi tên/mật khẩu bất kỳ user
+  async adminUpdateUser(req, res) {
+    try {
+      const userId = req.params.id;
+      const { full_name, password } = req.body;
+
+      if (!full_name && !password) {
+        return res.status(400).json({ error: 'Vui lòng cung cấp tên hoặc mật khẩu mới' });
+      }
+
+      const targetUser = await UserModel.findById(userId);
+      if (!targetUser) {
+        return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+      }
+
+      // Tài khoản Google OAuth không được đổi mật khẩu
+      if (password && targetUser.google_id) {
+        return res.status(403).json({ error: 'Tài khoản đăng nhập qua Google không thể đổi mật khẩu.' });
+      }
+
+      const changedFields = [];
+
+      if (full_name && full_name.trim()) {
+        await UserModel.updateFullName(userId, full_name.trim());
+        changedFields.push('name');
+      }
+
+      if (password) {
+        if (password.length < 6) {
+          return res.status(400).json({ error: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await UserModel.updatePassword(userId, hashedPassword);
+        changedFields.push('password');
+      }
+
+      // Lấy locale preference của user để gửi thông báo đúng ngôn ngữ
+      let locale = 'vi';
+      try {
+        const prefs = await PreferencesModel.getByUserId(userId);
+        if (prefs && prefs.locale) locale = prefs.locale;
+      } catch { /* default vi */ }
+
+      // Tạo nội dung thông báo đa ngôn ngữ
+      const isEN = locale === 'en';
+
+      let title, message;
+
+      if (changedFields.includes('name') && changedFields.includes('password')) {
+        title = isEN ? 'Account information changed' : 'Thông tin tài khoản đã thay đổi';
+        const newName = full_name.trim();
+        message = isEN
+          ? `Admin has changed your name to "${newName}" and your password. New password: ${password}`
+          : `Admin đã đổi tên của bạn thành "${newName}" và đổi mật khẩu. Mật khẩu mới: ${password}`;
+      } else if (changedFields.includes('password')) {
+        title = isEN ? 'Password changed' : 'Mật khẩu đã được thay đổi';
+        message = isEN
+          ? `Admin has changed your password. New password: ${password}`
+          : `Admin đã thay đổi mật khẩu của bạn. Mật khẩu mới: ${password}`;
+      } else {
+        title = isEN ? 'Display name changed' : 'Tên hiển thị đã được thay đổi';
+        const newName = full_name.trim();
+        message = isEN
+          ? `Admin has changed your display name to "${newName}".`
+          : `Admin đã đổi tên hiển thị của bạn thành "${newName}".`;
+      }
+
+      await NotificationModel.create({
+        user_id: userId,
+        type: 'system',
+        title,
+        message
+      });
+
+      // Emit socket real-time
+      const io = socketManager.getIO();
+      if (io) {
+        io.to(`user_${userId}`).emit('notification', { type: 'system', title, message });
+      }
+
+      const updatedUser = await UserModel.findById(userId);
+      const { password: _, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
