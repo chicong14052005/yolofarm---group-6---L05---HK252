@@ -60,8 +60,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user) return;
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-    const socket = socketIO(SOCKET_URL);
-    socket.emit('register', user.id);
+    const socket = socketIO(SOCKET_URL, {
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
+    });
+
+    const userId = Number(user.id);
+    const emitPresence = () => {
+      if (!Number.isInteger(userId) || userId <= 0) return;
+      socket.emit('register', userId);
+      socket.emit('presenceHeartbeat', userId);
+    };
+
+    socket.on('connect', emitPresence);
+    emitPresence();
+
+    const heartbeatTimer = window.setInterval(() => {
+      if (socket.connected) {
+        socket.emit('presenceHeartbeat', userId);
+      }
+    }, 15000);
 
     socket.on('notification', ({ title, message }: { title: string; message?: string }) => {
       toast.info(message || title, { autoClose: 8000 });
@@ -77,7 +95,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logout();
     });
 
-    return () => { socket.disconnect(); };
+    return () => {
+      window.clearInterval(heartbeatTimer);
+      socket.disconnect();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 

@@ -46,26 +46,89 @@ const io = new Server(server, {
 // Lưu io instance vào shared manager
 socketManager.setIO(io);
 
-const activeSockets = new Map(); // socket.id -> userId
+const PRESENCE_TTL_MS = Number(process.env.PRESENCE_TTL_MS || 45000);
+const PRESENCE_HEARTBEAT_EVENT = 'presenceHeartbeat';
+
+// socket.id -> { userId: number, lastSeen: number }
+const activeSockets = new Map();
+
+const normalizeUserId = (rawUserId) => {
+  const parsed = Number(rawUserId);
+  if (!Number.isInteger(parsed) || parsed <= 0) return null;
+  return parsed;
+};
+
+const getOnlineUserIds = () => {
+  const now = Date.now();
+  const ids = [];
+
+  for (const presence of activeSockets.values()) {
+    if (now - presence.lastSeen <= PRESENCE_TTL_MS) {
+      ids.push(presence.userId);
+    }
+  }
+
+  return Array.from(new Set(ids));
+};
+
+const upsertPresence = (socket, rawUserId) => {
+  const normalizedUserId = normalizeUserId(rawUserId);
+  if (!normalizedUserId) return false;
+
+  socket.join(`user_${normalizedUserId}`);
+  activeSockets.set(socket.id, {
+    userId: normalizedUserId,
+    lastSeen: Date.now(),
+  });
+
+  return true;
+};
 
 const broadcastOnlineUsers = () => {
-  const onlineUserIds = Array.from(new Set(activeSockets.values()));
+  const onlineUserIds = getOnlineUserIds();
   io.emit('onlineUsersUpdate', onlineUserIds);
 };
+
+// Periodically remove stale sockets that did not send heartbeat in time.
+const presenceCleanupInterval = setInterval(() => {
+  const now = Date.now();
+  let hasChanged = false;
+
+  for (const [socketId, presence] of activeSockets.entries()) {
+    if (now - presence.lastSeen > PRESENCE_TTL_MS) {
+      activeSockets.delete(socketId);
+      hasChanged = true;
+    }
+  }
+
+  if (hasChanged) {
+    broadcastOnlineUsers();
+  }
+}, 10000);
+
+server.on('close', () => {
+  clearInterval(presenceCleanupInterval);
+});
 
 io.on('connection', (socket) => {
   console.log(`[Socket.IO] Client káº¿t ná»‘i: ${socket.id}`);
 
   // Gáº¯n userId vĂ o socket náº¿u client gá»i
   socket.on('register', (userId) => {
-    socket.join(`user_${userId}`);
-    activeSockets.set(socket.id, userId);
-    broadcastOnlineUsers();
+    if (upsertPresence(socket, userId)) {
+      broadcastOnlineUsers();
+    }
+  });
+
+  socket.on(PRESENCE_HEARTBEAT_EVENT, (userId) => {
+    if (upsertPresence(socket, userId)) {
+      broadcastOnlineUsers();
+    }
   });
 
   // Láº¯ng nghe yĂªu cáº§u láº¥y danh sĂ¡ch tĂ i khoáº£n Ä‘ang online (cho admin)
   socket.on('requestOnlineUsers', () => {
-    const onlineUserIds = Array.from(new Set(activeSockets.values()));
+    const onlineUserIds = getOnlineUserIds();
     socket.emit('onlineUsersUpdate', onlineUserIds);
   });
 

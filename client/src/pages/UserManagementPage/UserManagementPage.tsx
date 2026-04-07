@@ -34,20 +34,50 @@ const UserManagementPage = () => {
 
   useEffect(() => {
     api.get('/users').then(({ data }) => setUsers(data)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
 
     // Listen for real-time online status
     const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
-    const socket = socketIO(SOCKET_URL);
-    
-    socket.emit('requestOnlineUsers');
-    socket.on('onlineUsersUpdate', (userIds: number[]) => {
-      setOnlineUserIds(userIds);
+    const socket = socketIO(SOCKET_URL, {
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
     });
 
+    const currentUserId = Number(currentUser.id);
+    const registerAndRequest = () => {
+      if (Number.isInteger(currentUserId) && currentUserId > 0) {
+        socket.emit('register', currentUserId);
+        socket.emit('presenceHeartbeat', currentUserId);
+      }
+      socket.emit('requestOnlineUsers');
+    };
+
+    socket.on('connect', registerAndRequest);
+    registerAndRequest();
+
+    socket.on('onlineUsersUpdate', (userIds: Array<number | string>) => {
+      const normalizedIds = userIds
+        .map((id) => Number(id))
+        .filter((id) => Number.isInteger(id) && id > 0);
+
+      setOnlineUserIds(Array.from(new Set(normalizedIds)));
+    });
+
+    const heartbeatTimer = window.setInterval(() => {
+      if (socket.connected && Number.isInteger(currentUserId) && currentUserId > 0) {
+        socket.emit('presenceHeartbeat', currentUserId);
+        socket.emit('requestOnlineUsers');
+      }
+    }, 15000);
+
     return () => {
+      window.clearInterval(heartbeatTimer);
       socket.disconnect();
     };
-  }, []);
+  }, [currentUser?.id]);
 
   // Guard: admin cannot delete themselves
   const handleDeleteClick = (u: User) => {
