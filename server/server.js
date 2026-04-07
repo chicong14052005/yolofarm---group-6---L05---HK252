@@ -13,11 +13,33 @@ const server = http.createServer(app);
 
 const socketManager = require('./src/config/socketManager');
 
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://smart-farmsmart-life.vercel.app',
+];
+
+const configuredOrigins = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const socketAllowedOrigins = [...new Set([...defaultAllowedOrigins, ...configuredOrigins])];
+
+const isSocketOriginAllowed = (origin) => {
+  if (!origin) return true;
+  if (socketAllowedOrigins.includes(origin)) return true;
+  return /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
+};
+
 // Khởi tạo Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : ['http://localhost:5173', 'https://smart-farmsmart-life.vercel.app'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
+    origin(origin, callback) {
+      callback(null, isSocketOriginAllowed(origin));
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    credentials: true,
   }
 });
 
