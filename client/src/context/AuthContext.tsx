@@ -59,7 +59,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Socket.IO: lắng nghe notification, accountDeleted, forceLogout
   useEffect(() => {
     if (!user) return;
-    const socket = socketIO('http://localhost:5000');
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    const socket = socketIO(SOCKET_URL);
     socket.emit('register', user.id);
 
     socket.on('notification', ({ title, message }: { title: string; message?: string }) => {

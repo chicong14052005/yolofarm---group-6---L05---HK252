@@ -82,7 +82,8 @@ const NotificationPage = () => {
   // Socket.IO: auto-refresh khi nhận notification mới
   useEffect(() => {
     if (!user) return;
-    const socket = socketIO('http://localhost:5000');
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    const socket = socketIO(SOCKET_URL);
     socket.emit('register', user.id);
     socket.on('notification', () => { fetchNotifications(); });
     return () => { socket.disconnect(); };

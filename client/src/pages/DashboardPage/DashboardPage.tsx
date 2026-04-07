@@ -63,7 +63,8 @@ const DashboardPage = () => {
 
   // Socket.IO: đồng bộ 2 chiều Adafruit ↔ Dashboard
   useEffect(() => {
-    const socket = socketIO('http://localhost:5000');
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    const socket = socketIO(SOCKET_URL);
     socket.on('deviceStatus', ({ type, status }: { type: string; status: string }) => {
       setDevices(prev => prev.map(d =>
         d.device_type === type ? { ...d, status, last_toggled_at: new Date().toISOString() } : d
