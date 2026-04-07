@@ -8,7 +8,7 @@ import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import AppRoutes from './routes/AppRoutes';
 import './assets/styles/global.css';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '120866169157-vcbo165ij3m9gc3q8fm3b9kr9va62fqv.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 /* Modal hiện khi admin xóa tài khoản user đang online */
 const AccountDeletedModal = () => {
