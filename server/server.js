@@ -16,8 +16,8 @@ const socketManager = require('./src/config/socketManager');
 // Khởi tạo Socket.IO
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST']
+    origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',') : ['http://localhost:5173', 'https://smart-farmsmart-life.vercel.app'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
   }
 });
 
