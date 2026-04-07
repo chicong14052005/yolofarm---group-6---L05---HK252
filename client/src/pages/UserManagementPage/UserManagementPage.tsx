@@ -7,6 +7,7 @@ import { MdOutlineBlock, MdOutlineCheckCircle } from 'react-icons/md';
 import { toast } from 'react-toastify';
 import ConfirmModal from '../../components/common/ConfirmModal/ConfirmModal';
 import api from '../../services/api';
+import { io as socketIO } from 'socket.io-client';
 import '../../pages/DashboardPage/DashboardPage.css';
 import './UserManagementPage.css';
 
@@ -20,6 +21,7 @@ const UserManagementPage = () => {
   const { t } = useLanguage();
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
+  const [onlineUserIds, setOnlineUserIds] = useState<number[]>([]);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
@@ -32,6 +34,19 @@ const UserManagementPage = () => {
 
   useEffect(() => {
     api.get('/users').then(({ data }) => setUsers(data)).catch(() => {});
+
+    // Listen for real-time online status
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+    const socket = socketIO(SOCKET_URL);
+    
+    socket.emit('requestOnlineUsers');
+    socket.on('onlineUsersUpdate', (userIds: number[]) => {
+      setOnlineUserIds(userIds);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   // Guard: admin cannot delete themselves
@@ -178,7 +193,8 @@ const UserManagementPage = () => {
             </thead>
             <tbody>
               {filtered.map((u, i) => {
-                const st = statusConfig[u.status] || statusConfig.inactive;
+                const displayStatus = u.status === 'banned' ? 'banned' : (onlineUserIds.includes(u.id) ? 'active' : 'inactive');
+                  const st = statusConfig[displayStatus] || statusConfig.inactive;
                 return (
                   <tr key={u.id} className="animate-fadeInUp" style={{ animationDelay: `${i * 60}ms` }}>
                     <td>
@@ -239,7 +255,8 @@ const UserManagementPage = () => {
         {/* Mobile card list */}
         <div className="user-card-list mobile-only">
           {filtered.map((u, i) => {
-            const st = statusConfig[u.status] || statusConfig.inactive;
+            const displayStatus = u.status === 'banned' ? 'banned' : (onlineUserIds.includes(u.id) ? 'active' : 'inactive');
+                  const st = statusConfig[displayStatus] || statusConfig.inactive;
             return (
               <div key={u.id} className="card user-card animate-fadeInUp" style={{ animationDelay: `${i * 60}ms` }}>
                 <div className="user-card-top">
@@ -368,3 +385,4 @@ const UserManagementPage = () => {
 };
 
 export default UserManagementPage;
+

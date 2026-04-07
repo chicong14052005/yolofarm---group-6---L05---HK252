@@ -46,16 +46,35 @@ const io = new Server(server, {
 // Lưu io instance vào shared manager
 socketManager.setIO(io);
 
-io.on('connection', (socket) => {
-  console.log(`[Socket.IO] Client kết nối: ${socket.id}`);
+const activeSockets = new Map(); // socket.id -> userId
 
-  // Gắn userId vào socket nếu client gửi
+const broadcastOnlineUsers = () => {
+  const onlineUserIds = Array.from(new Set(activeSockets.values()));
+  io.emit('onlineUsersUpdate', onlineUserIds);
+};
+
+io.on('connection', (socket) => {
+  console.log(`[Socket.IO] Client káº¿t ná»‘i: ${socket.id}`);
+
+  // Gáº¯n userId vĂ o socket náº¿u client gá»i
   socket.on('register', (userId) => {
     socket.join(`user_${userId}`);
+    activeSockets.set(socket.id, userId);
+    broadcastOnlineUsers();
+  });
+
+  // Láº¯ng nghe yĂªu cáº§u láº¥y danh sĂ¡ch tĂ i khoáº£n Ä‘ang online (cho admin)
+  socket.on('requestOnlineUsers', () => {
+    const onlineUserIds = Array.from(new Set(activeSockets.values()));
+    socket.emit('onlineUsersUpdate', onlineUserIds);
   });
 
   socket.on('disconnect', () => {
-    console.log(`[Socket.IO] Client ngắt kết nối: ${socket.id}`);
+    console.log(`[Socket.IO] Client ngáº¯t káº¿t ná»‘i: ${socket.id}`);
+    if (activeSockets.has(socket.id)) {
+      activeSockets.delete(socket.id);
+      broadcastOnlineUsers();
+    }
   });
 });
 
