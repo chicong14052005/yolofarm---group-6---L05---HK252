@@ -20,7 +20,7 @@ const SensorDataModel = {
       LEFT JOIN (
         SELECT sensor_type, AVG(value) AS avg_val
         FROM sensor_data
-        WHERE recorded_at BETWEEN NOW() - INTERVAL 2 HOUR AND NOW() - INTERVAL 1 HOUR
+        WHERE recorded_at BETWEEN DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR) - INTERVAL 2 HOUR AND DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR) - INTERVAL 1 HOUR
         GROUP BY sensor_type
       ) prev ON cur.sensor_type = prev.sensor_type
     `);
@@ -29,7 +29,7 @@ const SensorDataModel = {
 
   async getHistory(sensorType, hours = 24) {
     const [rows] = await pool.query(
-      'SELECT * FROM sensor_data WHERE sensor_type = ? AND recorded_at >= NOW() - INTERVAL ? HOUR ORDER BY recorded_at ASC',
+      'SELECT * FROM sensor_data WHERE sensor_type = ? AND recorded_at >= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR) - INTERVAL ? HOUR ORDER BY recorded_at ASC',
       [sensorType, hours]
     );
     return rows;
@@ -37,7 +37,7 @@ const SensorDataModel = {
 
   async create({ sensor_type, value, feed_key }) {
     const [result] = await pool.query(
-      `INSERT INTO sensor_data (sensor_type, value, feed_key, recorded_at) VALUES (?, ?, ?, CONVERT_TZ(NOW(), @@session.time_zone, '+07:00'))`,
+      `INSERT INTO sensor_data (sensor_type, value, feed_key, recorded_at) VALUES (?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR))`,
       [sensor_type, value, feed_key]
     );
     return { id: result.insertId, sensor_type, value, feed_key };
@@ -46,7 +46,7 @@ const SensorDataModel = {
   async getStats(sensorType, hours = 24) {
     const [rows] = await pool.query(
       `SELECT sensor_type, MIN(value) as min_val, MAX(value) as max_val, AVG(value) as avg_val, COUNT(*) as count
-       FROM sensor_data WHERE sensor_type = ? AND recorded_at >= NOW() - INTERVAL ? HOUR
+       FROM sensor_data WHERE sensor_type = ? AND recorded_at >= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR) - INTERVAL ? HOUR
        GROUP BY sensor_type`,
       [sensorType, hours]
     );

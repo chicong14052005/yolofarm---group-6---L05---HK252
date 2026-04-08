@@ -36,7 +36,7 @@ const deviceController = {
 
       // Cập nhật status + last_toggled_at trong DB
       await pool.query(
-        'UPDATE devices SET status = ?, last_toggled_at = NOW(), manual_override = TRUE WHERE device_type = ?',
+        'UPDATE devices SET status = ?, last_toggled_at = DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR), manual_override = TRUE WHERE device_type = ?',
         [status, device_type]
       );
       const device = await DeviceModel.findByType(device_type);
