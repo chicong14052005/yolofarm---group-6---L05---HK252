@@ -26,7 +26,13 @@ const weatherService = {
       console.log('[Weather] Đang lấy dữ liệu từ Open-Meteo...');
       let data;
       try {
-        const response = await axios.get(OPEN_METEO_URL, { params: OPEN_METEO_PARAMS, timeout: 10000 });
+        const response = await axios.get(OPEN_METEO_URL, { 
+          params: OPEN_METEO_PARAMS, 
+          timeout: 10000,
+          headers: {
+            'User-Agent': 'YoloFarm-SmartAgricultureApp/1.0 (https://github.com/chicong14052005/yolofarm---group-6---L05---HK252)'
+          }
+        });
         data = response.data;
       } catch (apiErr) {
         console.error('[Weather] Lỗi lấy dữ liệu Open-Meteo:', apiErr.message);
@@ -89,13 +95,6 @@ const weatherService = {
           const url = `${adafruitConfig.restApiUrl}/${adafruitConfig.username}/feeds/${sensor.feed}/data`;
           await axios.post(url, { value: String(sensor.value) }, {
             headers: { 'X-AIO-Key': adafruitConfig.key }
-          });
-
-          // Lưu vào DB
-          await SensorDataModel.create({
-            sensor_type: sensor.type,
-            value: sensor.value,
-            feed_key: sensor.feed,
           });
 
           // Emit qua socket cho frontend
