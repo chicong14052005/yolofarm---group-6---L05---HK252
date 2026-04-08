@@ -1,9 +1,9 @@
 const axios = require('axios');
 const adafruitConfig = require('../config/adafruit');
-const SensorDataModel = require('../models/sensorDataModel');
 const notificationService = require('./notificationService');
 
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
+const MET_NO_URL = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
 const OPEN_METEO_PARAMS = {
   latitude: 10.823,
   longitude: 106.6296,
@@ -14,7 +14,150 @@ const OPEN_METEO_PARAMS = {
   forecast_days: 1,
 };
 
+const WEATHER_USER_AGENT =
+  process.env.WEATHER_USER_AGENT ||
+  'YoloFarm-SmartAgricultureApp/1.0 (contact: admin@yolofarm.local)';
+
+let isFetching = false;
+let lastSuccessfulWeather = null;
+
 let io = null;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const getVietnamNow = () => {
+  const now = new Date();
+  const vnDateText = now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+  return new Date(vnDateText);
+};
+
+const normalizeOpenMeteoData = (data) => {
+  const temperature = Number(data.current.temperature_2m);
+  const humidity = Number(data.current.relative_humidity_2m);
+
+  const now = getVietnamNow();
+  const currentHour = now.getHours();
+  const soilMoistureRaw = data.hourly.soil_moisture_3_to_9cm[currentHour] || 0.2;
+  const soilMoisture = Math.round(Number(soilMoistureRaw) * 100);
+
+  const isDay = Number(data.current.is_day) === 1;
+  let lightIntensity = 0;
+  if (isDay && data.minutely_15 && data.minutely_15.direct_radiation) {
+    const minuteIndex = Math.min(
+      Math.floor((currentHour * 60 + now.getMinutes()) / 15),
+      data.minutely_15.direct_radiation.length - 1
+    );
+    const radiation = Number(data.minutely_15.direct_radiation[minuteIndex] || 0);
+    lightIntensity = Math.round(radiation * 120);
+  }
+
+  return {
+    source: 'open-meteo',
+    temperature,
+    humidity,
+    soilMoisture,
+    lightIntensity,
+  };
+};
+
+const fetchFromOpenMeteo = async () => {
+  const maxAttempts = 3;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await axios.get(OPEN_METEO_URL, {
+        params: OPEN_METEO_PARAMS,
+        timeout: 10000,
+        headers: {
+          'User-Agent': WEATHER_USER_AGENT,
+          Accept: 'application/json',
+        },
+      });
+
+      return normalizeOpenMeteoData(response.data);
+    } catch (error) {
+      const status = error.response?.status;
+      const retryAfterHeader = error.response?.headers?.['retry-after'];
+      const retryAfterMs = retryAfterHeader ? Number(retryAfterHeader) * 1000 : 0;
+      const backoffMs = retryAfterMs || attempt * 2000;
+
+      // Retry only for rate limit and transient upstream errors.
+      const shouldRetry = status === 429 || !status || status >= 500;
+      if (!shouldRetry || attempt === maxAttempts) {
+        throw error;
+      }
+
+      console.warn(`[Weather] Open-Meteo attempt ${attempt}/${maxAttempts} failed (status=${status || 'timeout'}). Retrying in ${backoffMs}ms...`);
+      await sleep(backoffMs);
+    }
+  }
+
+  throw new Error('Open-Meteo retry exhausted');
+};
+
+const fetchFromMetNo = async () => {
+  const response = await axios.get(MET_NO_URL, {
+    params: {
+      lat: OPEN_METEO_PARAMS.latitude,
+      lon: OPEN_METEO_PARAMS.longitude,
+    },
+    timeout: 10000,
+    headers: {
+      'User-Agent': WEATHER_USER_AGENT,
+      Accept: 'application/json',
+    },
+  });
+
+  const timeseries = response.data?.properties?.timeseries || [];
+  if (!timeseries.length) {
+    throw new Error('MET.no trả về dữ liệu rỗng');
+  }
+
+  const current = timeseries[0]?.data || {};
+  const details = current.instant?.details || {};
+  const precipitation1h = current.next_1_hours?.details?.precipitation_amount || 0;
+
+  const temperature = Number(details.air_temperature || 30);
+  const humidity = Math.round(Number(details.relative_humidity || 70));
+  const cloudPercent = Math.round(Number(details.cloud_area_fraction || 40));
+
+  const vnNow = getVietnamNow();
+  const hour = vnNow.getHours();
+  const isDay = hour >= 6 && hour < 18;
+
+  // Approximate soil moisture from humidity + precipitation when fallback source lacks soil sensor.
+  const soilMoisture = clamp(Math.round(humidity * 0.35 + Number(precipitation1h) * 8 + 20), 10, 90);
+  const estimatedRadiation = isDay ? Math.max(0, ((100 - cloudPercent) / 100) * 700) : 0;
+  const lightIntensity = Math.round(estimatedRadiation * 120);
+
+  return {
+    source: 'met-no-fallback',
+    temperature,
+    humidity,
+    soilMoisture,
+    lightIntensity,
+  };
+};
+
+const generateMockWeather = () => {
+  const vnNow = getVietnamNow();
+  const isDay = vnNow.getHours() >= 6 && vnNow.getHours() <= 18;
+
+  const temperature = Number((28 + Math.random() * 5).toFixed(1));
+  const humidity = Math.floor(60 + Math.random() * 20);
+  const soilMoisture = Math.floor(20 + Math.random() * 40);
+  const lightIntensity = isDay ? Math.floor(12000 + Math.random() * 55000) : Math.floor(Math.random() * 1000);
+
+  return {
+    source: 'mock-fallback',
+    temperature,
+    humidity,
+    soilMoisture,
+    lightIntensity,
+  };
+};
 
 const weatherService = {
   setSocketIO(socketIo) {
@@ -22,66 +165,59 @@ const weatherService = {
   },
 
   async fetchAndPublish() {
+    if (isFetching) {
+      console.log('[Weather] Skip fetch: lần cập nhật trước vẫn đang chạy');
+      return;
+    }
+
+    isFetching = true;
+
     try {
       console.log('[Weather] Đang lấy dữ liệu từ Open-Meteo...');
-      let data;
+      let weather;
+
       try {
-        const response = await axios.get(OPEN_METEO_URL, { 
-          params: OPEN_METEO_PARAMS, 
-          timeout: 10000,
-          headers: {
-            'User-Agent': 'YoloFarm-SmartAgricultureApp/1.0 (https://github.com/chicong14052005/yolofarm---group-6---L05---HK252)'
+        weather = await fetchFromOpenMeteo();
+      } catch (openMeteoError) {
+        console.error('[Weather] Lỗi lấy dữ liệu Open-Meteo:', openMeteoError.message);
+        console.log('[Weather] Thử nguồn dự phòng MET.no...');
+
+        try {
+          weather = await fetchFromMetNo();
+        } catch (metNoError) {
+          console.error('[Weather] Lỗi lấy dữ liệu MET.no:', metNoError.message);
+
+          if (lastSuccessfulWeather) {
+            weather = {
+              ...lastSuccessfulWeather,
+              source: 'last-success-cache',
+            };
+            console.log('[Weather] Dùng lại dữ liệu thành công gần nhất từ cache');
+          } else {
+            weather = generateMockWeather();
+            console.log('[Weather] Dùng dữ liệu mô phỏng vì tất cả nguồn upstream đều lỗi');
           }
-        });
-        data = response.data;
-      } catch (apiErr) {
-        console.error('[Weather] Lỗi lấy dữ liệu Open-Meteo:', apiErr.message);
-        console.log('[Weather] Sử dụng dữ liệu mô phỏng do lỗi API Open-Meteo (502/Timeout)...');
-        // Tạo dữ liệu mô phỏng (fallback) để hệ thống tiếp tục hoạt động
-        data = {
-          current: {
-            temperature_2m: (28 + Math.random() * 5).toFixed(1), // 28 - 33 độ C
-            relative_humidity_2m: Math.floor(60 + Math.random() * 20), // 60 - 80%
-            is_day: new Date().getHours() >= 6 && new Date().getHours() <= 18 ? 1 : 0
-          },
-          hourly: {
-            soil_moisture_3_to_9cm: Array.from({ length: 24 }, () => 0.2 + Math.random() * 0.4) // 20% - 60%
-          },
-          minutely_15: {
-            direct_radiation: Array.from({ length: 96 }, () => 2 + Math.random() * 600) // Giả lập bức xạ
-          }
+        }
+      }
+
+      if (weather.source !== 'mock-fallback' && weather.source !== 'last-success-cache') {
+        lastSuccessfulWeather = {
+          temperature: weather.temperature,
+          humidity: weather.humidity,
+          soilMoisture: weather.soilMoisture,
+          lightIntensity: weather.lightIntensity,
         };
       }
 
-      // 1. Temperature (°C) — lấy trực tiếp từ current
-
-      const temperature = data.current.temperature_2m;
-
-      // 2. Humidity (%) — lấy trực tiếp từ current
-      const humidity = data.current.relative_humidity_2m;
-
-      // 3. Soil Moisture (%) — lấy giờ gần nhất từ hourly, chuyển m³/m³ → %
-      const now = new Date();
-      const currentHour = now.getHours();
-      const soilMoistureRaw = data.hourly.soil_moisture_3_to_9cm[currentHour] || 0.2;
-      const soilMoisture = Math.round(soilMoistureRaw * 100);
-
-      // 4. Light Intensity (lux) — chuyển đổi từ direct_radiation (W/m²)
-      const isDay = data.current.is_day;
-      let lightIntensity = 0;
-      if (isDay === 1 && data.minutely_15 && data.minutely_15.direct_radiation) {
-        // Tìm mốc minutely_15 gần nhất
-        const minuteIndex = Math.min(
-          Math.floor((currentHour * 60 + now.getMinutes()) / 15),
-          data.minutely_15.direct_radiation.length - 1
-        );
-        const radiation = data.minutely_15.direct_radiation[minuteIndex] || 0;
-        lightIntensity = Math.round(radiation * 120); // W/m² → lux (xấp xỉ)
-      }
+      const temperature = weather.temperature;
+      const humidity = weather.humidity;
+      const soilMoisture = weather.soilMoisture;
+      const lightIntensity = weather.lightIntensity;
 
       console.log(`[Weather] Dữ liệu: temp=${temperature}°C, hum=${humidity}%, soil=${soilMoisture}%, light=${lightIntensity} lux`);
+      console.log(`[Weather] Nguồn dữ liệu: ${weather.source}`);
 
-      // Gửi lên Adafruit IO + lưu DB + emit socket
+      // Gửi lên Adafruit IO + emit socket
       const sensorData = [
         { type: 'temperature', value: temperature, feed: adafruitConfig.feeds.temperature },
         { type: 'humidity', value: humidity, feed: adafruitConfig.feeds.humidity },
@@ -117,6 +253,8 @@ const weatherService = {
       console.log('[Weather] Hoàn tất cập nhật dữ liệu');
     } catch (err) {
       console.error('[Weather] Lỗi lấy dữ liệu Open-Meteo:', err.message);
+    } finally {
+      isFetching = false;
     }
   }
 };

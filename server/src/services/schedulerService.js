@@ -7,6 +7,9 @@ const adafruitConfig = require('../config/adafruit');
 const weatherService = require('./weatherService');
 const notificationService = require('./notificationService');
 
+const WEATHER_CRON = process.env.WEATHER_CRON || '*/15 * * * *';
+const WEATHER_JITTER_MS = Math.max(Number(process.env.WEATHER_JITTER_MS || 20000), 0);
+
 // Mapping device_type (DB) → adafruit config key
 const DEVICE_TO_FEED_MAP = {
   pump1: 'pump1',
@@ -69,6 +72,16 @@ const resetManualOverride = async (deviceType) => {
 };
 
 let socketIo = null;
+
+const runWeatherWithJitter = async (reason) => {
+  const jitter = WEATHER_JITTER_MS > 0 ? Math.floor(Math.random() * (WEATHER_JITTER_MS + 1)) : 0;
+  if (jitter > 0) {
+    console.log(`[Scheduler] ${reason} delay ${jitter}ms để giảm trùng nhịp gọi API upstream`);
+    await new Promise((resolve) => setTimeout(resolve, jitter));
+  }
+
+  await weatherService.fetchAndPublish();
+};
 
 // Helper: kiểm tra schedule có áp dụng cho ngày hiện tại không
 const isScheduleActiveToday = (schedule, todayStr, currentDay) => {
@@ -214,9 +227,9 @@ const schedulerService = {
       }
     });
 
-    // Cập nhật dữ liệu thời tiết từ Open-Meteo mỗi 15 phút
-    cron.schedule('*/15 * * * *', async () => {
-      await weatherService.fetchAndPublish();
+    // Cập nhật dữ liệu thời tiết từ Open-Meteo theo cron cấu hình
+    cron.schedule(WEATHER_CRON, async () => {
+      await runWeatherWithJitter('Weather cron');
     });
 
     // Startup recovery + fetch weather (delay 5s để đảm bảo DB sẵn sàng)
@@ -224,11 +237,11 @@ const schedulerService = {
       console.log('[Scheduler] Kiểm tra khôi phục schedule sau restart...');
       await schedulerService.recoverOnStartup(socketIo);
       console.log('[Scheduler] Fetch dữ liệu thời tiết lần đầu...');
-      await weatherService.fetchAndPublish();
+      await runWeatherWithJitter('Startup weather fetch');
     }, 5000);
 
     console.log('[Scheduler] Cron job lịch tưới đã khởi động (kiểm tra START + END mỗi phút)');
-    console.log('[Scheduler] Cron job Open-Meteo weather đã khởi động (mỗi 15 phút)');
+    console.log(`[Scheduler] Cron job Open-Meteo weather đã khởi động (${WEATHER_CRON}), jitter=${WEATHER_JITTER_MS}ms`);
   }
 };
 
