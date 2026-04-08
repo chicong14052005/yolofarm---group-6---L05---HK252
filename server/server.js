@@ -111,9 +111,9 @@ server.on('close', () => {
 });
 
 io.on('connection', (socket) => {
-  console.log(`[Socket.IO] Client káº¿t ná»‘i: ${socket.id}`);
+  console.log(`[Socket.IO] Client kết nối: ${socket.id}`);
 
-  // Gáº¯n userId vĂ o socket náº¿u client gá»i
+  // Gắn userId vào socket nếu client gửi
   socket.on('register', (userId) => {
     if (upsertPresence(socket, userId)) {
       broadcastOnlineUsers();
@@ -126,18 +126,14 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Láº¯ng nghe yĂªu cáº§u láº¥y danh sĂ¡ch tĂ i khoáº£n Ä‘ang online (cho admin)
+  // Lắng nghe yêu cầu lấy danh sách tài khoản đang online (cho admin)
   socket.on('requestOnlineUsers', () => {
     const onlineUserIds = getOnlineUserIds();
     socket.emit('onlineUsersUpdate', onlineUserIds);
   });
 
   socket.on('disconnect', () => {
-    console.log(`[Socket.IO] Client ngáº¯t káº¿t ná»‘i: ${socket.id}`);
-    if (activeSockets.has(socket.id)) {
-      activeSockets.delete(socket.id);
-      broadcastOnlineUsers();
-    }
+    console.log(`[Socket.IO] Client ngắt kết nối: ${socket.id}`);
   });
 });
 
