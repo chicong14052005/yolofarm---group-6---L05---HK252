@@ -37,7 +37,7 @@ const SensorDataModel = {
 
   async create({ sensor_type, value, feed_key }) {
     const [result] = await pool.query(
-      'INSERT INTO sensor_data (sensor_type, value, feed_key) VALUES (?, ?, ?)',
+      'INSERT INTO sensor_data (sensor_type, value, feed_key, recorded_at) VALUES (?, ?, ?, CONVERT_TZ(NOW(), @@session.time_zone, "+07:00"))',
       [sensor_type, value, feed_key]
     );
     return { id: result.insertId, sensor_type, value, feed_key };
