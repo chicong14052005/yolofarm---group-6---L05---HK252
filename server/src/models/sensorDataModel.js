@@ -1,5 +1,7 @@
 const pool = require('../config/db');
 
+const SENSOR_DEDUP_SECONDS = Math.max(Number(process.env.SENSOR_DEDUP_SECONDS || 8), 0);
+
 const SensorDataModel = {
   async getLatest() {
     const [rows] = await pool.query(`
@@ -37,9 +39,24 @@ const SensorDataModel = {
 
   async create({ sensor_type, value, feed_key }) {
     const [result] = await pool.query(
-      `INSERT INTO sensor_data (sensor_type, value, feed_key, recorded_at) VALUES (?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR))`,
-      [sensor_type, value, feed_key]
+      `INSERT INTO sensor_data (sensor_type, value, feed_key, recorded_at)
+       SELECT ?, ?, ?, DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR)
+       FROM DUAL
+       WHERE NOT EXISTS (
+         SELECT 1
+         FROM sensor_data
+         WHERE sensor_type = ?
+           AND feed_key = ?
+           AND ABS(value - ?) < 0.0001
+           AND recorded_at >= DATE_ADD(UTC_TIMESTAMP(), INTERVAL 7 HOUR) - INTERVAL ? SECOND
+       )`,
+      [sensor_type, value, feed_key, sensor_type, feed_key, value, SENSOR_DEDUP_SECONDS]
     );
+
+    if (!result.affectedRows) {
+      return null;
+    }
+
     return { id: result.insertId, sensor_type, value, feed_key };
   },
 

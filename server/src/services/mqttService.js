@@ -7,6 +7,11 @@ const DeviceModel = require('../models/deviceModel');
 let client = null;
 let io = null;
 
+const mqttClientId = process.env.MQTT_CLIENT_ID
+  || (process.env.NODE_ENV === 'production'
+    ? 'yolofarm-render-mqtt-writer'
+    : `yolofarm-local-${Math.random().toString(16).slice(2, 10)}`);
+
 const sensorFeedMap = {
   [adafruitConfig.feeds.temperature]: 'temperature',
   [adafruitConfig.feeds.humidity]: 'humidity',
@@ -24,6 +29,11 @@ const mqttService = {
   init(socketIo) {
     io = socketIo;
 
+    if (client && client.connected) {
+      console.log('[MQTT] Kết nối đã tồn tại, bỏ qua init trùng');
+      return;
+    }
+
     if (!adafruitConfig.username || !adafruitConfig.key) {
       console.log('[MQTT] Chưa cấu hình Adafruit IO, bỏ qua kết nối MQTT');
       return;
@@ -33,6 +43,7 @@ const mqttService = {
       port: mqttConfig.port,
       username: mqttConfig.username,
       password: mqttConfig.password,
+      clientId: mqttClientId,
       ...mqttConfig.options
     });
 
@@ -55,11 +66,17 @@ const mqttService = {
 
         if (sensorFeedMap[feedKey]) {
           // Lưu dữ liệu cảm biến vào DB
-          await SensorDataModel.create({
+          const inserted = await SensorDataModel.create({
             sensor_type: sensorFeedMap[feedKey],
             value,
             feed_key: feedKey
           });
+
+          if (!inserted) {
+            console.log(`[MQTT] Bỏ qua dữ liệu trùng (${sensorFeedMap[feedKey]}=${value})`);
+            return;
+          }
+
           // Push realtime đến Frontend
           if (io) {
             io.emit('sensorData', { type: sensorFeedMap[feedKey], value, timestamp: new Date() });
@@ -94,7 +111,10 @@ const mqttService = {
   },
 
   disconnect() {
-    if (client) client.end();
+    if (client) {
+      client.end();
+      client = null;
+    }
   }
 };
 

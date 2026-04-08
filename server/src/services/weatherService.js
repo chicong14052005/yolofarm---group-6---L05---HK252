@@ -29,7 +29,7 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 const getVietnamNow = () => {
   const now = new Date();
-  const vnDateText = now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const vnDateText = now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
   return new Date(vnDateText);
 };
 
