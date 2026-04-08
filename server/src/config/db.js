@@ -11,7 +11,13 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  timezone: '+07:00'
+  timezone: '+07:00',
+  dateStrings: true
+});
+
+// Thiết lập timezone cho MySQL session mỗi khi có một kết nối mới
+pool.on('connection', (connection) => {
+  connection.query("SET time_zone = '+07:00';");
 });
 
 module.exports = pool;
