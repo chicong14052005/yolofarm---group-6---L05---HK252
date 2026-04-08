@@ -216,6 +216,9 @@ const weatherService = {
 
       console.log(`[Weather] Dữ liệu: temp=${temperature}°C, hum=${humidity}%, soil=${soilMoisture}%, light=${lightIntensity} lux`);
       console.log(`[Weather] Nguồn dữ liệu: ${weather.source}`);
+      if (weather.source === 'met-no-fallback' && weather.meta) {
+        console.log(`[Weather] MET.no interpolation: prev=${weather.meta.previousTime}, next=${weather.meta.nextTime}, ratio=${weather.meta.ratio}`);
+      }
 
       // Gửi lên Adafruit IO + emit socket
       const sensorData = [
