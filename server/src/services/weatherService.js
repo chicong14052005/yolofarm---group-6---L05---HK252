@@ -3,8 +3,7 @@ const adafruitConfig = require('../config/adafruit');
 const notificationService = require('./notificationService');
 
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
-const OPEN_WEATHER_URL = 'https://api.openweathermap.org/data/3.0/onecall';
-const OPEN_WEATHER_API_KEY = process.env.OPEN_WEATHER_API_KEY;
+const MET_NO_URL = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
 const OPEN_METEO_PARAMS = {
   latitude: 10.823,
   longitude: 106.6296,
@@ -98,42 +97,43 @@ const fetchFromOpenMeteo = async () => {
   throw new Error('Open-Meteo retry exhausted');
 };
 
-const fetchFromOpenWeather = async () => {
-  const response = await axios.get(OPEN_WEATHER_URL, {
+const fetchFromMetNo = async () => {
+  const response = await axios.get(MET_NO_URL, {
     params: {
       lat: OPEN_METEO_PARAMS.latitude,
       lon: OPEN_METEO_PARAMS.longitude,
-      appid: OPEN_WEATHER_API_KEY,
-      units: 'metric',
-      exclude: 'minutely,hourly,daily,alerts'
     },
     timeout: 10000,
+    headers: {
+      'User-Agent': WEATHER_USER_AGENT,
+      Accept: 'application/json',
+    },
   });
 
-  const current = response.data?.current;
-  if (!current) {
-    throw new Error('OpenWeatherMap trả về dữ liệu rỗng');
+  const timeseries = response.data?.properties?.timeseries || [];
+  if (!timeseries.length) {
+    throw new Error('MET.no trả về dữ liệu rỗng');
   }
 
-  const temperature = Number(current.temp || 30);
-  const humidity = Math.round(Number(current.humidity || 70));
-  const cloudPercent = Math.round(Number(current.clouds || 40));
+  const current = timeseries[0]?.data || {};
+  const details = current.instant?.details || {};
+  const precipitation1h = current.next_1_hours?.details?.precipitation_amount || 0;
+
+  const temperature = Number(details.air_temperature || 30);
+  const humidity = Math.round(Number(details.relative_humidity || 70));
+  const cloudPercent = Math.round(Number(details.cloud_area_fraction || 40));
 
   const vnNow = getVietnamNow();
   const hour = vnNow.getHours();
   const isDay = hour >= 6 && hour < 18;
 
-  const precipitation1h = current.rain ? (current.rain['1h'] || 0) : 0;
-  
-  // Ước tính độ ẩm đất tương đối từ độ ẩm không khí do OpenWeatherMap không API trả về độ ẩm đất trực tiếp
+  // Approximate soil moisture from humidity + precipitation when fallback source lacks soil sensor.
   const soilMoisture = clamp(Math.round(humidity * 0.35 + Number(precipitation1h) * 8 + 20), 10, 90);
-  
-  // Ước tính cường độ sáng từ mật độ mây
   const estimatedRadiation = isDay ? Math.max(0, ((100 - cloudPercent) / 100) * 700) : 0;
   const lightIntensity = Math.round(estimatedRadiation * 120);
 
   return {
-    source: 'open-weather-fallback',
+    source: 'met-no-fallback',
     temperature,
     humidity,
     soilMoisture,
@@ -180,12 +180,12 @@ const weatherService = {
         weather = await fetchFromOpenMeteo();
       } catch (openMeteoError) {
         console.error('[Weather] Lỗi lấy dữ liệu Open-Meteo:', openMeteoError.message);
-        console.log('[Weather] Thử nguồn dự phòng OpenWeatherMap...');
+        console.log('[Weather] Thử nguồn dự phòng MET.no...');
 
         try {
-          weather = await fetchFromOpenWeather();
-        } catch (owmError) {
-          console.error('[Weather] Lỗi lấy dữ liệu OpenWeatherMap:', owmError.message);
+          weather = await fetchFromMetNo();
+        } catch (metNoError) {
+          console.error('[Weather] Lỗi lấy dữ liệu MET.no:', metNoError.message);
 
           if (lastSuccessfulWeather) {
             weather = {
@@ -216,8 +216,8 @@ const weatherService = {
 
       console.log(`[Weather] Dữ liệu: temp=${temperature}°C, hum=${humidity}%, soil=${soilMoisture}%, light=${lightIntensity} lux`);
       console.log(`[Weather] Nguồn dữ liệu: ${weather.source}`);
-      if (weather.source === 'open-weather-fallback' && weather.meta) {
-        console.log(`[Weather] OpenWeatherMap interpolation: prev=${weather.meta.previousTime}, next=${weather.meta.nextTime}, ratio=${weather.meta.ratio}`);
+      if (weather.source === 'met-no-fallback' && weather.meta) {
+        console.log(`[Weather] MET.no interpolation: prev=${weather.meta.previousTime}, next=${weather.meta.nextTime}, ratio=${weather.meta.ratio}`);
       }
 
       // Gửi lên Adafruit IO + emit socket
