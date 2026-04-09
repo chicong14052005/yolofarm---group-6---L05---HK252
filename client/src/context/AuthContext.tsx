@@ -54,6 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('yolofarm_prefs', JSON.stringify(prefs));
       }).catch(() => {});
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, token]);
 
   // Socket.IO: lắng nghe notification, accountDeleted, forceLogout
@@ -138,6 +139,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) throw new Error('useAuth must be used within AuthProvider');

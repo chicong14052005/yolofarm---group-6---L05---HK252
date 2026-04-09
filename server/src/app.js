@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+const pool = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 
 // Import Routes
@@ -76,6 +77,25 @@ app.use('/api/privacy-policy', privacyPolicyRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// DB keepalive check: dùng endpoint này cho cron-job miễn phí để giữ Aiven không idle shutdown.
+app.get('/api/health/db', async (req, res) => {
+  try {
+    const [[row]] = await pool.query('SELECT 1 AS db_ok');
+    res.json({
+      status: 'OK',
+      db: row.db_ok === 1 ? 'UP' : 'UNKNOWN',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: 'DEGRADED',
+      db: 'DOWN',
+      message: 'Database is not reachable',
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // Error handler
