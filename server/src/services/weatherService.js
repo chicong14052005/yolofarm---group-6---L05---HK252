@@ -125,11 +125,19 @@ const fetchFromMetNo = async () => {
 
   const vnNow = getVietnamNow();
   const hour = vnNow.getHours();
-  const isDay = hour >= 6 && hour < 18;
+  const minute = vnNow.getMinutes();
+  const currentTime = hour + minute / 60;
+  const isDay = currentTime >= 5 && currentTime < 18.5;
 
   // Approximate soil moisture from humidity + precipitation when fallback source lacks soil sensor.
   const soilMoisture = clamp(Math.round(humidity * 0.35 + Number(precipitation1h) * 8 + 20), 10, 90);
-  const estimatedRadiation = isDay ? Math.max(0, ((100 - cloudPercent) / 100) * 700) : 0;
+  
+  let estimatedRadiation = 0;
+  if (isDay) {
+    // Sử dụng hàm sin để nội suy cường độ ánh sáng theo thời gian (cao điểm lúc 12h trưa)
+    const solarElevationFactor = Math.sin(Math.PI * (currentTime - 6) / 12);
+    estimatedRadiation = Math.max(0, solarElevationFactor * ((100 - cloudPercent) / 100) * 700);
+  }
   const lightIntensity = Math.round(estimatedRadiation * 120);
 
   return {
