@@ -4,21 +4,16 @@ export interface PredictionResult {
   confidence: number;
 }
 
-export interface DiseaseDetectionResult {
+/* ── Disease Detection (FastAPI response) ── */
+
+export interface DiseaseDetectionData {
+  disease_id: number;
   disease_name: string;
-  confidence: number;
-  description: string;
-  crop_type: string;
-  pest_common_name: string;
-  treatments: Treatment[];
-  threat_level: "low" | "medium" | "high";
-  estimated_count?: number;
+  treatment: string;
+  confidence: number; // Giá trị 0–100 (đã nhân 100)
 }
 
-export interface Treatment {
-  name: string;
-  type: string;
-  description: string;
-  efficacy: number;
-  tags: string[];
+export interface DiseaseDetectionResult {
+  success: boolean;
+  data: DiseaseDetectionData;
 }

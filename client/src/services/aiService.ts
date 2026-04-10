@@ -15,6 +15,7 @@ const aiService = {
     formData.append("image", imageFile);
     const { data } = await api.post("/ai/detect-disease", formData, {
       headers: { "Content-Type": "multipart/form-data" },
+      timeout: 60000, // 60s — ML inference có thể mất thời gian
     });
     return data;
   },
