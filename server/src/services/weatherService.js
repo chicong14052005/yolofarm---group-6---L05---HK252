@@ -5,8 +5,8 @@ const notificationService = require('./notificationService');
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 const MET_NO_URL = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
 const OPEN_METEO_PARAMS = {
-  latitude: 10.823,
-  longitude: 106.6296,
+  latitude: 10.883873,
+  longitude: 106.782022,
   current: 'temperature_2m,relative_humidity_2m,is_day',
   hourly: 'soil_moisture_3_to_9cm',
   minutely_15: 'direct_radiation',
@@ -29,7 +29,7 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 const getVietnamNow = () => {
   const now = new Date();
-  const vnDateText = now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const vnDateText = now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
   return new Date(vnDateText);
 };
 
