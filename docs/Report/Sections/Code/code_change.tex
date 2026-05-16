@@ -1,0 +1,256 @@
+\subsection{Điều chỉnh mã nguồn có sẵn}
+
+Trong quá trình thực hiện bài tập lớn, bên cạnh việc hiện thực các file theo yêu cầu đề bài, nhóm em cũng đã tiến hành chỉnh sửa một số file có sẵn nhằm phục vụ cho việc triển khai và kiểm thử hệ thống một cách hiệu quả hơn.
+
+\subsubsection{\texttt{os-cfg.h}}
+\subsubsubsection{Cấu hình hệ thống qua \texttt{\#define}}
+
+Theo như tài liệu hướng dẫn bài tập lớn, để hỗ trợ việc phát triển và kiểm thử các module thuật toán một cách độc lập, ta sẽ sử dụng cơ chế cấu hình (Configuration control) thông qua các hằng số định nghĩa (\texttt{\#define}) trong file \texttt{include/os-cfg.h}. Mỗi tính năng được đóng gói thành một module riêng và được kích hoạt (hoặc không) bằng cách định nghĩa các cờ hiệu tương ứng. Phần này chủ yếu áp dụng cho cơ chế phân trang bộ nhớ xử lý (Paging Memory Management). Cách tiếp cận này hạn chế sự can thiệp lẫn nhau giữa các module chức năng. 
+
+Mỗi khi chương trình gặp đoạn mã dạng như hiển thị dưới đây thì luồng thực thi sẽ đi vào nhánh này nếu cờ \textit{<Tên cờ hiệu>} được kích hoạt.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+    #ifdef <Ten co hieu>
+        // xử lý
+    #endif
+\end{lstlisting}
+
+\subsubsubsection{Cờ hiệu mới được thêm}
+
+Ngoài các cờ hiệu mặc định được định sẵn ở mã nguồn ban đầu, nhóm em bổ sung thêm một cờ hiệu mới là \texttt{TIME\_SLOT}: Cờ hiệu này được sử dụng để điều chỉnh hành vi của thuật toán cho bộ định thời (Scheduler), đặc biệt là trong thuật toán cần chia thời gian CPU thành các nhịp (Time slice) như của bài tập lớn. Khi \texttt{TIME\_SLOT} được định nghĩa, các nhịp thời gian sẽ được áp dụng để giới hạn thời gian chạy của mỗi tiến trình.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+ /* Trong os-cfg.h */    
+#ifndef OSCFG_H
+#define OSCFG_H
+
+#define MLQ_SCHED 1
+#define MAX_PRIO 140
+
+#define MM_PAGING
+#define MM_FIXED_MEMSZ
+#define MMDBG          // Print Memory Management Debug
+#define VMDBG          // Print Virtual Memory Debug
+#define IODUMP 1       // Print I/O Dump
+#define PAGETBL_DUMP 1 // Print Page Table Dump
+#define TIME_SLOT 1    // Print Time Slot
+
+#endif
+\end{lstlisting}
+
+Ngoài \texttt{TIME\_SLOT}, từng cờ hiệu đều có mục đích khác nhau:
+
+\begin{itemize}
+    \item \texttt{MLQ\_SCHED}: Kích hoạt thuật toán dùng hàng đợi đa cấp (Multi-level Queue).
+    \item \texttt{MAX\_PRIO}: Khai báo mức ưu tiên tối đa (thấp nhất) là $140$.
+    \item \texttt{MM\_PAGING}: Kích hoạt module quản lý bộ nhớ phân trang.
+    \item \texttt{MM\_FIXED\_MEMSZ}: Nếu các file cấu hình trong \texttt{input/} không có dòng chứa kích thước bộ nhớ vật lý của hệ thống (dòng thứ 2): một vùng \texttt{MEMRAM} và tối đa 4 vùng \texttt{MEMSWP} thì kích thước RAM thật và kích thước của các vùng swap sẽ được cấp phát mặc định.
+    \item \texttt{IODUMP}: In ra I/O Dump gồm các thông tin từ bộ nhớ vật lý tùy vào mong muốn hiển thị kết quả.
+    \item \texttt{PAGETBL\_DUMP}: In ra Page Table Dump gồm các thông tin từ bảng phân trang tùy vào mong muốn hiển thị kết quả.
+\end{itemize}
+
+\subsubsection{\texttt{timer.c}}
+
+Vì thêm cờ hiệu \texttt{TIME\_SLOT}, trong file này cần chỉnh sửa đoạn mã để vào nhánh mà cờ hiệu được đặt:
+
+\begin{lstlisting}[style=Cstyle,language=C]
+ /* Trong timer.c */    
+    static void *timer_routine(void *args)
+    {   	
+    ...
+        #ifdef TIME_SLOT
+        	printf("Time slot %3lu\n", current_time());
+        #endif
+    ...    
+    }
+\end{lstlisting}
+
+Đồng thời, khi kiểm thử chương trình, nhóm nhận thấy một số thông báo in ra không đúng với time slot thực tế. Để khắc phục, nhóm đã chỉnh sửa như sau:
+
+\begin{lstlisting}[style=Cstyle,language=C]
+static void *timer_routine(void *args)
+{
+	//print time slot 0
+        #ifdef TIME_SLOT
+			printf("Time slot %3lu\n", current_time());
+		#endif
+	while (!timer_stop)
+	{
+        /* Wait for all devices have done the job in current
+		 * time slot */
+		...
+		// Change these two statements' position
+		/* Increase the time slot */
+		if (fsh == event)
+		{
+			break;
+		}
+		_time++;
+		#ifdef TIME_SLOT
+			printf("Time slot %3lu\n", current_time());
+		#endif
+		
+		
+		/* Let devices continue their job */
+		...
+		
+		
+	}
+	pthread_exit(args);
+}
+\end{lstlisting}
+
+\begin{itemize}
+    \item In Time slot đầu tiên ra ngoài vòng lặp để không bỏ sót mốc 0.
+    \item In time slot ngay khi time tăng lên, giúp đảm bảo rằng thông báo time slot phù hợp chính xác với thời gian hệ thống hiện tại, trước khi cho các thiết bị thực thi. Tránh hiện tượng in lệch do hành vi song song, ví dụ: các thread khác có thể chạy trước khi lệnh printf được thực hiện, gây nhiễu thông tin in ra.
+    \item Đẩy việc kiểm tra hoàn thành chương trình lên để kết thúc sớm. Giúp chương trình kết thúc ngay lập tức khi hoàn thành công việc (fsh == event), tránh tăng time slot và in ra thêm dòng không cần thiết. Nếu đặt sau \texttt{\_time++}, có thể dẫn đến in dư một time slot.
+
+\end{itemize}
+
+\subsubsection{\texttt{os.c}}
+
+Nhằm giảm thiểu quy trình ẩn hoặc hiện các định nghĩa trong file \texttt{os-cfg.h}, mã nguồn trong file \texttt{os.c} được thay đổi để kiểm tra các file cấu hình từ input đầu vào có chứa dòng lệnh khai báo kích thước của bộ nhớ vật lý hệ thống hay không như bên dưới. Từ đó, ta không cần ẩn hoặc hiện dòng lệnh \texttt{MM\_FIXED\_MEMSZ} như ban đầu.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong os.c */    
+#ifdef MM_PAGING
+    int sit;
+    /* Check second line of each input if it contains `RAM_SZ` `SWP_SZ_0` `SWP_SZ_1` `SWP_SZ_2` `SWP_SZ_3` */
+    long pos = ftell(file); 
+    char buffer[256];
+
+    if (fgets(buffer, sizeof(buffer), file))
+    {
+        int sz_config[5];
+        int count_sz = sscanf(buffer, "%d %d %d %d %d", &sz_config[0], &sz_config[1], &sz_config[2], &sz_config[3], &sz_config[4]);
+
+        if (count_sz == 5)
+        {
+            /* Read input config of memory size: MEMRAM and upto 4 MEMSWP (mem swap)
+             * Format: (size=0 result non-used memswap, must have RAM and at least 1 SWAP)
+             *        MEM_RAM_SZ MEM_SWP0_SZ MEM_SWP1_SZ MEM_SWP2_SZ MEM_SWP3_SZ
+             */
+            memramsz = sz_config[0];
+            for (sit = 0; sit < PAGING_MAX_MMSWP; sit++)
+            {
+                memswpsz[sit] = sz_config[sit + 1];
+            }
+
+            fscanf(file, "\n"); /* Final character */
+        }
+
+        else
+        {
+            /* We provide here a back compatible with legacy OS simulatiom config file
+             * In which, it have no addition config line for Mema, keep only one line
+             * for legacy info
+             *  [time slice] [N = Number of CPU] [M = Number of Processes to be run]
+             */
+            memramsz = 0x100000;
+            memswpsz[0] = 0x1000000;
+            for (sit = 1; sit < PAGING_MAX_MMSWP; sit++)
+                memswpsz[sit] = 0;
+            fseek(file, pos, SEEK_SET);
+        }
+    }
+#endif
+\end{lstlisting}
+
+Lưu ý: Mã nguồn được chỉnh sửa theo dạng của mỗi file cấu hình giống ở mô tả trong tài liệu hướng dẫn bài tập lớn, khi dòng thứ 2 của mỗi file cấu hình có thể hoặc không có chứa: 
+
+\begin{center}
+    \texttt{[RAM\_SZ] [SWP\_SZ\_0] [SWP\_SZ\_1] [SWP\_SZ\_2] [SWP\_SZ\_3]}
+\end{center}
+
+Đồng thời, nhóm đã bổ sung vào hàm \texttt{cpu\_routine(void *arg)} những thành phần sau:
+
+\begin{itemize}
+    \item Biến \texttt{use\_time}: Số slot CPU đã dùng cho tiến trình hiện tại. Mỗi lần cpu cho tiến trình chạy, biến này sẽ được tăng lên 1 đơn vị.
+    \item Biến \texttt{remaining\_slot}: Số slot còn lại mà hàng đợi mức độ ưu tiên hiện tại được phép dùng.
+    \item Mỗi khi lấy được tiến trình từ hàng đợi, biến \texttt{remaining\_slot} sẽ được cập nhật bằng hàm \texttt{get\_slot(uint32\_t prio)} để kiểm tra hàng đợi của mức độ ưu tiên hiện tại còn bao nhiêu slot có thể sử dụng.
+    \item Khi tiến trình kết thúc hoặc bị đặt lại vào hàng đợi, số slot đã sử dụng CPU của hàng đợi mức độ ưu tiên hiện tại sẽ được trừ đi 1 đơn vị thời gian. Cùng với đó, biến \texttt{use\_time} cũng được thiết lập lại về 0 để sử dụng cho việc lấy các tiến trình tiếp theo.
+    \item Khi tiến trình được phân phối vào CPU, ta không cung cấp toàn bộ \texttt{time\_slot} mà chỉ cấp \texttt{time\_left = min(time\_slot, remaining\_slot)}. Nếu số slot còn lại của hàng đợi ưu tiên hiện tại thấp hơn số \texttt{time\_slot} mặc định, thì ta chỉ cấp cho tiến trình số slot còn lại mà nó có. Nếu ta không giới hạn thời gian như thế, một tiến trình có thể sử dụng vượt mức số slot mà nó có, dẫn đến việc hàng đợi đó chiếm nhiều thời gian CPU hơn mức được phép.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+static void *cpu_routine(void *args)
+{
+    ...
+#ifdef MLQ_SCHED
+    int use_time = 0;
+    int remaining_slot = 0;
+#endif
+    struct pcb_t *proc = NULL;
+    while (1)
+    {
+        /* Check the status of current process */
+        if (proc == NULL)
+        {
+            /* No process is running, the we load new process from
+             * ready queue */
+            proc = get_proc();
+            if (proc == NULL)
+            {
+                next_slot(timer_id);
+                continue; /* First load failed. skip dummy load */
+            }
+            else
+                remaining_slot = get_slot(proc->prio); 
+        }
+        else if (proc->pc == proc->code->size)
+        {
+            /* The porcess has finish it job */
+            printf("\tCPU %d: Processed %2d has finished\n",
+                   id, proc->pid);
+#ifdef MLQ_SCHED
+            update_slot(proc->prio, use_time); 
+#endif
+            free(proc);
+
+            proc = get_proc();
+            time_left = 0;
+
+#ifdef MLQ_SCHED
+            use_time = 0;
+            if (proc)
+                remaining_slot = get_slot(proc->prio); 
+#endif
+        }
+        else if (time_left == 0)
+        {
+            /* The process has done its job in current time slot */
+            printf("\tCPU %d: Put process %2d to run queue\n",
+                   id, proc->pid);
+            put_proc(proc);
+#ifdef MLQ_SCHED
+            update_slot(proc->prio, use_time); 
+#endif
+            proc = get_proc();
+
+#ifdef MLQ_SCHED
+            if (proc)
+                remaining_slot = get_slot(proc->prio); 
+#endif
+        }
+
+        ...
+#ifdef MLQ_SCHED
+            time_left = (time_slot < remaining_slot) ? time_slot : remaining_slot;
+            use_time = 0;
+#endif
+        }
+
+        /* Run current process */
+        run(proc);
+        time_left--;
+#ifdef MLQ_SCHED
+        use_time++;
+#endif
+        next_slot(timer_id);
+        // usleep(3000);
+    }
+    detach_event(timer_id);
+    pthread_exit(NULL);
+}
+\end{lstlisting}
+
