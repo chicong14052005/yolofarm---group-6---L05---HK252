@@ -33,3 +33,5 @@ __pycache__/
 *.pyc
 .claude
 *.egg-info/
+.venv/
+venv/
