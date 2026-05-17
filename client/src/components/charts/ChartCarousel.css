@@ -135,3 +135,40 @@
 .carousel-empty p {
   font-size: 0.85rem;
 }
+
+/* Forecast update button */
+.forecast-update-btn {
+  color: var(--primary, #3b82f6) !important;
+  border-color: var(--primary, #3b82f6) !important;
+}
+
+.forecast-update-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@keyframes iconSpin {
+  to { transform: rotate(360deg); }
+}
+
+.forecast-update-btn .spin {
+  animation: iconSpin 0.8s linear infinite;
+  display: inline-block;
+}
+
+/* Forecast updating bar */
+.forecast-updating-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: 6px 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.forecast-updating-bar .carousel-spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
