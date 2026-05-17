@@ -1,17 +1,27 @@
 import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { toast } from 'react-toastify';
 import Sidebar from '../../components/common/Sidebar/Sidebar';
 import { useLanguage } from '../../context/LanguageContext';
 import aiService from '../../services/aiService';
 import type { DiseaseDetectionResult } from '../../types/ai';
 import { HiOutlineUpload, HiOutlineClock } from 'react-icons/hi';
+import aiService from '../../services/aiService';
+import type { DiseaseDetectionData } from '../../types/ai';
 import '../../pages/DashboardPage/DashboardPage.css';
 import './AIPage.css';
+
+/** Trả về màu cho vòng tròn confidence */
+const getConfidenceColor = (conf: number) => {
+  if (conf >= 80) return 'var(--success, #22c55e)';
+  if (conf >= 50) return 'var(--warning, #f59e0b)';
+  return 'var(--danger, #ef4444)';
+};
 
 const AIPage = () => {
   const { t } = useLanguage();
   const [preview, setPreview] = useState<string | null>(null);
-  const [result, setResult] = useState<DiseaseDetectionResult | null>(null);
+  const [result, setResult] = useState<DiseaseDetectionData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,15 +31,21 @@ const AIPage = () => {
 
     setPreview(URL.createObjectURL(file));
     setLoading(true);
-    setError(null);
     setResult(null);
+    setError(null);
 
     try {
-      const data = await aiService.detectDisease(file);
-      setResult(data);
-    } catch (err) {
-      setError('Dịch vụ nhận diện hiện không khả dụng. Vui lòng thử lại sau.');
-      setPreview(null);
+      const response = await aiService.detectDisease(file);
+      if (response.success && response.data) {
+        setResult(response.data);
+      } else {
+        throw new Error('Không nhận được kết quả từ mô hình AI');
+      }
+    } catch (err: unknown) {
+      const axiosErr = err as { response?: { data?: { error?: string } }; message?: string };
+      const msg = axiosErr.response?.data?.error || axiosErr.message || 'Lỗi khi phân tích ảnh';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -54,6 +70,7 @@ const AIPage = () => {
 
         <div className="ai-layout">
           <div className="ai-left">
+            {/* ── Upload Area ── */}
             <div className="card upload-card">
               <div {...getRootProps()} className={`dropzone ${isDragActive ? 'active' : ''}`}>
                 <input {...getInputProps()} disabled={loading} />
@@ -66,20 +83,35 @@ const AIPage = () => {
               </div>
             </div>
 
-            {error && (
+            {/* ── Loading State ── */}
+            {loading && (
               <div className="card detection-card animate-fadeInUp">
-                <div className="detection-body" style={{ justifyContent: 'center', textAlign: 'center', padding: '2rem' }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: 'var(--danger)', marginBottom: '1rem' }}>error</span>
-                  <p style={{ color: 'var(--text-muted)' }}>{error}</p>
+                <div className="loading-container">
+                  <div className="spinner" />
+                  <p className="loading-text">Đang phân tích hình ảnh...</p>
+                  <p className="loading-subtext">Mô hình AI đang xử lý, vui lòng đợi</p>
                 </div>
               </div>
             )}
 
-            {result && result.disease_name && result.disease_name !== 'unknown' && (
+            {/* ── Error State ── */}
+            {error && !loading && (
+              <div className="card detection-card animate-fadeInUp">
+                <div className="error-container">
+                  <span className="error-icon">⚠️</span>
+                  <h3>Phát hiện lỗi</h3>
+                  <p>{error}</p>
+                  <button className="btn btn-primary" onClick={() => setError(null)}>Thử lại</button>
+                </div>
+              </div>
+            )}
+
+            {/* ── Detection Result ── */}
+            {result && !loading && (
               <div className="card detection-card animate-fadeInUp">
                 <div className="detection-header">
-                  <h3>{t('ai.detectionDetails')}</h3>
-                  <span className="scan-time"><HiOutlineClock /> {t('ai.scannedAgo')} 2 min</span>
+                  <h3>🔬 {t('ai.detectionDetails')}</h3>
+                  <span className="scan-time"><HiOutlineClock /> Vừa quét xong</span>
                 </div>
                 <div className="detection-body">
                   {preview && <img src={preview} alt="Scanned" className="scanned-image" />}
@@ -87,27 +119,25 @@ const AIPage = () => {
                     <div className="confidence-ring">
                       <svg viewBox="0 0 100 100">
                         <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border)" strokeWidth="6" />
-                        <circle cx="50" cy="50" r="42" fill="none" stroke="var(--primary)" strokeWidth="6"
-                          strokeDasharray={`${confidencePercent * 2.64} 264`} strokeLinecap="round"
-                          transform="rotate(-90 50 50)" />
-                        <text x="50" y="45" textAnchor="middle" fontSize="20" fontWeight="800" fill="var(--text-primary)">{confidencePercent}%</text>
-                        <text x="50" y="60" textAnchor="middle" fontSize="8" fill="var(--text-muted)">{t('ai.match')}</text>
+                        <circle cx="50" cy="50" r="42" fill="none"
+                          stroke={getConfidenceColor(result.confidence)}
+                          strokeWidth="6"
+                          strokeDasharray={`${result.confidence * 2.64} 264`}
+                          strokeLinecap="round"
+                          transform="rotate(-90 50 50)"
+                          className="confidence-circle-animated"
+                        />
+                        <text x="50" y="45" textAnchor="middle" fontSize="18" fontWeight="800" fill="var(--text-primary)">
+                          {Math.round(result.confidence)}%
+                        </text>
+                        <text x="50" y="60" textAnchor="middle" fontSize="8" fill="var(--text-muted)">
+                          {t('ai.match')}
+                        </text>
                       </svg>
                     </div>
-                    <div>
+                    <div className="detection-text">
                       <h2>{result.disease_name}</h2>
-                      <span className={`badge ${result.threat_level === 'high' ? 'badge-danger' : result.threat_level === 'medium' ? 'badge-warning' : 'badge-success'}`}>
-                        {result.threat_level === 'high' ? 'Active Threat Level: ' : 'Threat Level: '}{result.threat_level}
-                      </span>
-                      <div className="detail-rows">
-                        <div><span>{t('ai.cropType')}</span><strong>{result.crop_type}</strong></div>
-                        {result.pest_common_name !== 'unknown' && (
-                          <div><span>{t('ai.pestName')}</span><strong>{result.pest_common_name}</strong></div>
-                        )}
-                        {result.estimated_count && (
-                          <div><span>{t('ai.estimatedCount')}</span><strong className="text-danger">{result.estimated_count}</strong></div>
-                        )}
-                      </div>
+                      <p className="treatment-preview">{result.treatment}</p>
                     </div>
                   </div>
                 </div>
@@ -124,25 +154,25 @@ const AIPage = () => {
             )}
           </div>
 
+          {/* ── Right Panel: Treatment ── */}
           <div className="ai-right">
             <div className="card treatments-card">
-              <h3>{t('ai.recommendedTreatments')}</h3>
-              {(result?.treatments || []).length > 0 ? (
-                (result!.treatments).map((tr, i) => (
-                  <div key={i} className="treatment-item">
-                    <h4>{tr.name}</h4>
-                    <span className="badge badge-success">{tr.type}</span>
-                    <p>{tr.description}</p>
-                    <div className="treatment-footer">
-                      <span className="efficacy">{tr.efficacy}% {t('ai.efficacy')}</span>
-                      <button className="btn btn-secondary btn-sm">{t('ai.viewGuide')}</button>
-                    </div>
+              <h3>🌿 {t('ai.recommendedTreatments')}</h3>
+              {result && !loading ? (
+                <div className="treatment-item animate-fadeInUp">
+                  <h4>{result.disease_name}</h4>
+                  <span className={`badge ${result.disease_id === 5 ? 'badge-success' : 'badge-danger'}`}>
+                    {result.disease_id === 5 ? '✅ CÂY KHỎE MẠNH' : '⚠️ CẦN XỬ LÝ'}
+                  </span>
+                  <p>{result.treatment}</p>
+                  <div className="treatment-footer">
+                    <span className="efficacy">
+                      Độ tin cậy: {result.confidence}%
+                    </span>
                   </div>
-                ))
+                </div>
               ) : (
-                <p className="empty-text">
-                  {loading ? 'Đang xử lý...' : error ? 'Không thể tải thông tin điều trị.' : t('ai.uploadHint')}
-                </p>
+                <p className="empty-text">{t('ai.uploadHint')}</p>
               )}
             </div>
           </div>

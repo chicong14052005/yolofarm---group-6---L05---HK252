@@ -81,7 +81,10 @@ const aiController = {
       const FormData = require('form-data');
       const fs = require('fs');
       const formData = new FormData();
-      formData.append('image', fs.createReadStream(req.file.path));
+      formData.append('file', fs.createReadStream(req.file.path), {
+        filename: req.file.originalname,
+        contentType: req.file.mimetype,
+      });
 
       const response = await axios.post(`${aiUrl}/detect-disease`, formData, {
         headers: formData.getHeaders()

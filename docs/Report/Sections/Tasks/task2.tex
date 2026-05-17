@@ -1,0 +1,30 @@
+\section{Yêu cầu người dùng}
+\subsection{Yêu cầu chức năng}
+%TODO
+\subsubsection{Nhóm chức năng giám sát và thu thập}
+\begin{enumerate}[label = {\arabic*.}, leftmargin = 1cm]
+	\item  Hệ thống phải tự động thu thập thông tin về nhiệt độ, độ ẩm không khí và độ ẩm đất thông qua các cảm biến kết nối với mạch YOLO:bit.
+	\item Dữ liệu cảm biến phải được gửi về máy chủ trung tâm thông qua kết nối Wi-fi theo thời gian thực.
+	\item Các thông số cơ bản và trạng thái hệ thống phải được hiển thị trực tiếp trên ma trận LED của YOLO:bit để người dùng theo dõi nhanh.
+\end{enumerate}
+\subsubsection{Nhóm chức năng phân tích}
+\begin{enumerate}[label = {\arabic*.}, leftmargin = 1cm]
+	\item Hệ thống phải dự báo được xu hướng (nhiệt độ/ độ ẩm) trong tương lai gần dựa trên dữ liệu đã thu thập để đưa ra cảnh báo sớm.
+	\item Hệ thống phải tự động phân tích hình ảnh lá cây được cung cấp từ người dùng và xác định được cây đang khỏe mạnh hay bị nhiễm loại sâu bệnh cụ thể nào.
+\end{enumerate}
+\subsubsection{Nhóm chức năng điều khiển và tương tác}
+\begin{enumerate}[label = {\arabic*.}, leftmargin = 1cm]
+	\item Tự động kích hoạt hệ thống tưới tiêu dựa trên ngưỡng thông số cài đặt, theo lịch của người dùng hoặc đề xuất từ mô hình AI.
+	\item Cung cấp giao diện web/app để người dùng theo dõi biểu đồ dữ liệu, nhận và xem các thông báo, điều khiển thiết bị từ xa.
+\end{enumerate}
+
+\subsection{Yêu cầu phi chức năng}
+\indent Hệ thống cần có một số yêu cầu phi chức năng liên quan đến hiệu năng, độ chính xác, tính ổn định và khả năng mở rộng nhằm đáp ứng sự thuận tiện cho người dùng và đảm bảo rằng hệ thống hoạt động hiệu quả hơn. Các yêu cầu phi chức năng cụ thể như sau:
+\begin{enumerate}[label = {\arabic*.}, leftmargin = 1cm]
+	\item Hiệu năng: Thời gian phản hồi từ khi cảm biến ghi nhận dữ liệu đến khi hiển thị trên dashboard không vượt quá 3 giây.
+	\item Độ chính xác: Mô hình nhận diện sâu bệnh phải đạt độ chính xác tối thiểu 80\% trên tập dữ liệu thử nghiệm.
+	\item Tính ổn định: Hệ thống phải có khả năng tự động khôi phục lại kết nối khi tín hiệu Wi-fi bị gián đoạn.
+	\item Khả năng mở rộng: Hệ thống có thể tích hợp thêm các loại cảm biến mới (cảm biến ánh sáng, nồng độ $CO_2$) mà không cần thay đổi cấu trúc cốt lõi.
+	\item Dễ sử dụng: Giao diện Dashboard phải trực quan, hỗ trợ ngôn ngữ tiếng Việt để người dùng dễ dàng thao tác.
+\end{enumerate}
+%TODO

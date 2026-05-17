@@ -1,0 +1,312 @@
+\section{Task 1. Thu thập yêu cầu nghiệp vụ -- Requirements}
+\subsection{Task 1.1. Chi tiết đặc tả của dự án -- Project details specification}
+
+\textbf{Yêu cầu: } Nhà trường mong muốn xây dựng một hệ thống phần mềm để quản lý và vận hành chương trình Tutor một cách hiệu quả, hiện đại và có khả năng mở rộng, đáp ứng nhu cầu thực tiễn trong môi trường giáo dục đại học.
+
+\subsubsection{Đặt vấn đề}
+Hiện nay, chương trình Tutor/Mentor đã được triển khai tại Trường Đại học Bách khoa – ĐHQG TP.HCM để hỗ trợ sinh viên trong quá trình học tập và phát triển kỹ năng. Các tutor có thể là giảng viên, nghiên cứu sinh hoặc sinh viên năm trên có thành tích học tập tốt, được phân công kèm cặp và đồng hành cùng các sinh viên khác.
+
+Tuy nhiên, việc quản lý chương trình Tutor hiện nay theo phương thức truyền thống còn nhiều hạn chế:
+\begin{itemize}
+	\item \textbf{Khó khăn trong quản lý thông tin:} Hồ sơ tutor, sinh viên, lịch hẹn và kết quả học tập thường phân tán, chưa có hệ thống quản lý tập trung.
+	\item \textbf{Đặt lịch thiếu linh hoạt:} Việc sắp xếp, hủy hoặc thay đổi lịch tư vấn còn thủ công, dễ nhầm lẫn hoặc chồng chéo.
+	\item \textbf{Thiếu minh bạch và công bằng:} Việc phân bổ tutor cho sinh viên đôi khi chưa khách quan, khó giám sát.
+	\item \textbf{Hạn chế công cụ đánh giá:} Chưa có hệ thống thu thập phản hồi và đánh giá hiệu quả buổi tư vấn để cải thiện chất lượng.
+	\item \textbf{Khả năng tích hợp hạn chế:} Các dịch vụ sẵn có của trường như HCMUT\_SSO, HCMUT\_DATACORE và HCMUT\_LIBRARY chưa được kết nối để hỗ trợ chương trình Tutor.
+\end{itemize}
+
+
+\subsubsection{Giải pháp đặt ra}
+Hệ thống HCMUT\_TSS được phát triển nhằm giải quyết các vấn đề trên, mang lại giải pháp quản lý hiện đại, minh bạch và hiệu quả:
+
+\begin{itemize}
+	\item \textbf{Tiết kiệm thời gian và công sức:} Sinh viên có thể đăng ký tham gia chương trình Tutor, chọn lịch hẹn và trao đổi trực tuyến mọi lúc, mọi nơi.
+	\item \textbf{Tăng tính minh bạch và công bằng:} Quy trình đăng ký, phân bổ tutor được quản lý công khai, dễ giám sát.
+	\item \textbf{Cập nhật tình trạng theo thời gian thực:} Lịch tư vấn, thay đổi hay hủy lịch đều được hệ thống ghi nhận và thông báo ngay lập tức.
+	\item \textbf{Tính linh hoạt cao:} Sinh viên và tutor có thể thay đổi hoặc hủy buổi hẹn dễ dàng, phù hợp với lịch trình cá nhân.
+	\item \textbf{Công cụ phản hồi và đánh giá:} Thu thập ý kiến từ sinh viên và tutor để cải thiện chương trình; dữ liệu có thể dùng cho báo cáo học thuật, xét điểm rèn luyện hoặc học bổng.
+	\item \textbf{Tích hợp hạ tầng công nghệ HCMUT:} Kết nối với HCMUT\_SSO (đăng nhập tập trung), HCMUT\_DATACORE (dữ liệu cá nhân), và HCMUT\_LIBRARY (học liệu số).
+\end{itemize}
+
+\subsubsection{Các bên liên quan (stakeholder) \& lợi ích của các bên liên quan}
+\subsubsubsection{Sinh viên trường Đại học Bách khoa - ĐHQG-HCM (Student)}
+Sinh viên là đổi tượng chính sử dụng dịch vụ, đăng kí tham gia chương trình, cần hỗ trợ và phát triển kĩ năng. Sinh viên có thể thực hiện các thao tác đăng kí dễ dàng, lựa chọn và được gợi ý tutor phù hợp với nhu cầu (hỗ trợ cá nhân, lĩnh vực chuyên môn)
+
+Hệ thống HCMUT\_TSS sẽ quản lí lịch hẹn, buổi gặp (trực tiếp/ trực tuyến), thông báo nhắc lịch và lưu biên bản cho sinh viên. Sinh viên có thể đánh giá chất lượng buổi học, theo dõi tiến bộ, truy cấp tài liệu từ HCMUT\_LIBRARY, hỗ trợ học tập cá nhân hóa (nâng cao như AI), có cơ hội nhận điểm rèn luyện, học bổng dựa trên kết quả tham gia.
+\subsubsubsection{Tutor (Tutors/Mentors)}
+
+Tutors là những giảng viên, nghiên cứu sinh hoặc sinh viên năm trên có thành tích tốt, hướng dẫn nhóm sinh viên. Tutors theo dõi, ghi nhận sự tiến bộ và nhận phản hồi của sinh viên 
+
+Hệ thống HCMUT\_TSS cũng cung cấp đầy đủ tính năng cho tutors tương tự như sinh viên (quản lí hồ sơ, hỗ trợ ghép cặp năng cao, đồng bộ dữ liệu...)
+
+\subsubsubsection{Khoa/Bộ môn}
+Khoa và bộ môn sẽ quản lý học thuật, theo dõi tình hình của sinh viên ở các môn cụ thể. 
+
+Hệ thống cung cấp cho khoa và bộ môn dữ liệu đánh giá và phản hồi của sinh viên và tutors, từ đó giám sát, đánh giá và phân tích tình trạng học tập của sinh viên.
+
+\subsubsubsection{Phòng đào tạo}
+Phòng đào tạo sẽ quản lý tổng thể đào tạo, phân bổ nguồn lực phù hợp.
+
+Hệ thống HCMUT\_TSS cung cấp cho phòng đào tạo báo cáo, dữ liệu tổng quan để tối ưu hoá phân bổ nguồn lực và tài nguyên, giám sát hiệu quả chương trình, đảm bảo tích hợp với HCMUT\_SSO và DATACORE cho an toàn dữ liệu, hỗ trợ mở rộng để nâng cao chất lượng đào tạo.
+
+\subsubsubsection{Phòng công tác Sinh viên}
+Phòng công tác sinh viên quản lý hoạt động sinh viên, xét điểm rèn luyện và học bổng.
+
+Hệ thống HCMUT\_TSS cung cấp cho phòng công tác sinh viên kết quả tham gia (phản hồi, tiến bộ) để cộng điểm rèn luyện hoặc xét học bổng, tích hợp dữ liệu để giảm thủ công, đảm bảo công bằng và minh bạch
+
+\subsubsubsection{Ban quản lý chương trình}
+Ban quản lý chương trình phụ trách quản lý hệ thôngs, phân quyền và vận hành chương trình.
+
+Hệ thống HCMUT\_TSS cung cấp cho ban quản lý hệ thống khả năng phân quyền tự động dựa trên vai trò từ HCMUT\_SSO, tạo báo cáo, quản lý tutors - sinh viên, đảm bảo tích hợp với hạ tầng HCMUT (SSO, DATACORE, LIBRARY) để bảo mật và hiệu quả.
+
+\subsubsubsection{Trường Đại học Bách khoa - ĐHQG-HCM (HCMUT)}
+Là nhà đầu tư, đưa hệ thống vào phục vụ sinh viên, chịu trách nhiệm quản lý cao nhất, cung cấp địa điểm để sinh viên - tutor gặp mặt trực tiếp, hỗ trợ mở rộng để nâng cao hiệu quả toàn trường.
+
+HCMUT\_TSS cung cấp cho trường khả năng đồng bộ và nhập liệu dữ liệu cá nhân, tích hợp xác thực thống nhất qua HCMUT\_SSO.
+
+\subsubsubsection{Khách (Guest)}
+Là người không (hoặc chưa) đăng nhập vào hệ thống. Họ mong muốn tìm hiểu thông tin của dịch vụ này,
+cách sử dụng khi dùng dịch vụ.
+
+HCMUT\_TSS cung cấp cho họ các thông tin về dịch vụ của mình, tư vấn giúp họ đưa ra quyết định
+sử dụng dịch vụ.
+
+\subsection{Task 1.2. Phân tích yêu cầu}
+
+\textbf{Yêu cầu:} Mô tả chi tiết các yêu cầu chức năng và phi chức năng có thể suy ra từ mô tả dự án.
+
+
+
+\subsubsection{Yêu cầu chức năng}
+\subsubsubsection{Sinh viên trường Đại học Bách khoa - ĐHQG-HCM}
+\begin{itemize}
+	\item Đăng nhập hệ thống thông qua HCMUT\_SSO.
+	\item Đăng xuất khỏi hệ thống.
+	\item Xem thông tin cá nhân được đồng bộ từ HCMUT\_DATACORE.
+	\item Đăng ký tham gia theo bộ môn và lựa chọn tutor dựa trên lịch rảnh khi đăng ký; hệ thống gửi thông báo tự động (non-interactive).
+	\item Được hệ thống gợi ý tutor phù hợp khi đăng ký.
+	\item Đánh giá và phản hồi chất lượng buổi học.
+	\item Truy cập tài liệu, giáo trình thông qua HCMUT\_LIBRARY.
+	\item Chia sẻ tài liệu, giáo trình thông qua HCMUT\_LIBRARY.
+\end{itemize}
+
+\subsubsubsection{Người hướng dẫn (giảng viên, nghiên cứu sinh, sinh viên có thành tích cao)}
+\begin{itemize}
+	\item Đăng nhập hệ thống thông qua HCMUT\_SSO.
+	\item Đăng xuất khỏi hệ thống.
+	\item Xem thông tin cá nhân được đồng bộ từ HCMUT\_DATACORE.
+	\item Thiết lập lịch rảnh cá nhân để sinh viên có thể đăng ký.
+	\item Thiết lập và quản lý các buổi tư vấn, các buổi gặp mặt sinh viên.
+	\item Hủy hoặc thay đổi lịch đã thiết lập.
+	\item Theo dõi và ghi nhận tiến bộ của sinh viên được hướng dẫn thông qua chức năng đánh giá, phản hồi.
+	\item Truy cập tài liệu, giáo trình thông qua HCMUT\_LIBRARY.
+	\item Chia sẻ tài liệu, giáo trình thông qua HCMUT\_LIBRARY.
+\end{itemize}
+\subsubsubsection{Cán bộ các Khoa/Bộ môn trường Đại học Bách khoa - ĐHQG-HCM}
+\begin{itemize}
+	\item Xem dữ liệu về tình hình học tập của sinh viên.
+\end{itemize}
+
+\subsubsubsection{Cán bộ Phòng Đào tạo trường Đại học Bách khoa - ĐHQG-HCM}
+\begin{itemize}
+	\item Xem dữ liệu đánh giá, phản hồi về chất lượng buổi học từ sinh viên và tutor.
+\end{itemize}
+
+\subsubsubsection{Cán bộ Phòng Công tác Sinh viên trường Đại học Bách khoa - ĐHQG-HCM}
+\begin{itemize}
+	\item Xem kết quả tham gia của người sử dụng phần mềm.
+\end{itemize}
+
+\subsubsubsection{Khách}
+
+
+
+\subsubsection{Yêu cầu phi chức năng}
+\subsubsubsection{Hiệu suất và độ ổn định}
+\begin{itemize}
+	\item Hệ thống có khả năng xử lý đồng thời 1000 yêu cầu (đăng ký, đặt lịch, phản hồi).
+	\item Khả năng mở rộng để hỗ trợ 5000 lượt truy cập đồng thời với hiệu suất ổn định.
+	\item Thời gian phản hồi không quá 2 giây cho các thao tác quan trọng như: đặt lịch, hủy/đổi lịch, xác nhận buổi gặp.
+	\item Đảm bảo hoạt động ổn định trong giờ cao điểm (tuần đăng ký tutor đầu kỳ, tuần thi học kỳ).
+\end{itemize}
+\subsubsubsection{Khả năng tương thích và tích hợp}
+\begin{itemize}
+	\item Hệ thống tương thích với các trình duyệt phổ biến (Chrome, Firefox, Safari, Edge). phiên bản mới nhất của thiết bị di động, máy tính bảng, máy tính xách tay và máy tính để bàn.
+	\item Hệ thống tương thích với các phiên bản mới nhất của thiết bị di động, máy tính bảng, máy tính xách tay và máy tính để bàn.
+	\item Tích hợp với HCMUT\_DATACORE để đồng bộ dữ liệu cá nhân và HCMUT\_LIBRARY để truy cập tài liệu học tập chính thống.
+	\item Tích hợp với HCMUT\_SSO để hỗ trợ đăng nhập thống nhất và đồng bộ vai trò người dùng.
+\end{itemize}
+\subsubsubsection{Tính khả dụng}
+\begin{itemize}
+	\item Hệ thống đạt mức độ khả dụng 95\% trong thời gian hoạt động, không tính thời gian bảo trì định kỳ.
+	\item Thời gian khôi phục sau sự cố không quá 30 phút để đảm bảo dịch vụ liên tục.
+	\item Đảm bảo 95\% yêu cầu đăng ký, đặt lịch, và phản hồi được xử lý thành công trong tháng.
+\end{itemize}
+\subsubsubsection{Bảo mật và quyền truy cập}
+\begin{itemize}
+	\item Sử dụng HCMUT\_SSO để xác thực đăng nhập, bảo vệ thông tin nhạy cảm như mã số sinh viên, mã cán bộ, và lịch sử buổi học.
+	\item Đồng bộ dữ liệu cá nhân cơ bản từ HCMUT\_DATACORE, bảo đảm tính chính xác và hạn chế nhập liệu thủ công.
+	\item Phân quyền chi tiết: sinh viên, tutor, cán bộ Phòng Đào tạo, cán bộ Phòng Công tác Sinh viên, ...
+	\item Tất cả dữ liệu được trao đổi qua giao thức an toàn (HTTPS).
+	\item Thực hiện backup dữ liệu định kỳ để tránh mất mát thông tin quan trọng.
+\end{itemize}
+\subsubsubsection{Khả năng mở rộng}
+\begin{itemize}
+	\item Hệ thống có khả năng mở rộng để hỗ trợ thêm tutor và sinh viên (>8000 tài khoản hoạt động) khi chương trình phát triển.
+	\item Hỗ trợ triển khai các tính năng nâng cao như ghép cặp thông minh bằng AI, cộng đồng trực tuyến, và hỗ trợ học tập cá nhân hóa mà không làm gián đoạn dịch vụ hiện tại.
+\end{itemize}
+\subsubsubsection{Khả năng bảo trì}
+\begin{itemize}
+	\item Mã nguồn được thiết kế theo kiến trúc module hóa, dễ bảo trì và nâng cấp.
+	\item Cho phép thêm tutor, môn học, hoặc chức năng mới mà không ảnh hưởng đến dịch vụ đang hoạt động.
+	\item Các hoạt động nâng cấp, bảo trì phải được thực hiện ngoài giờ cao điểm và hoàn tất trước ngày làm việc tiếp theo.
+\end{itemize}
+
+
+\subsection{Task 1.3. Use-case Diagram}
+\subsubsection{Bảng mô tả Use-case Đăng xuất}
+
+\begin{figure}[!htbp]
+	\centering
+	\fbox{\includegraphics[width=0.7\linewidth]{./Pictures//Usecase2/Logout.png}}
+	\caption{Use-case Diagram \textit{Đăng xuất}}
+\end{figure}
+
+\begin{longtable}{|p{4.5cm}|p{8cm}|}\hline 
+	\texttt{Use-case ID} & U3\\
+	\hline
+	%%%%%%%%%%%%%%%
+	\texttt{Use-case Name} & Đăng xuất\\
+	\hline
+	%%%%%%%%%%%%%%%
+	\texttt{Use-case Overview} & Mô tả chức năng đăng xuất khỏi hệ thống của người dùng (sinh viên và tutor), các phòng ban quản lý (khoa/bộ môn, phòng Đào tạo, phòng Công tác Sinh viên).
+	\\
+	\hline
+	\texttt{Actors} & Người dùng gồm sinh viên, tutor. Phòng ban quản lý gồm khoa/bộ môn, phòng Đào tạo, phòng Công tác Sinh viên.
+	\\
+	\hline
+	\texttt{Preconditions} & 
+	 1. Người dùng/Phòng ban quản lý phải là thành viên của trường Đại học Bách khoa -- ĐHQG-HCM.
+	 \\
+	 &
+	 2. Người dùng/Phòng ban quản lý đã truy cập vào trang web ứng dụng của dịch vụ để đăng nhập trước đó.
+	\\
+	\hline
+	\texttt{Trigger} & Người dùng/Phòng ban quản lý sẽ nhấn vào nút Đăng xuất trên ứng dụng.\\
+	\hline
+	\texttt{Basic flow} & 
+	Hệ thống tiến hành đăng xuất tài khoản người dùng/phòng ban quản lý và khởi động lại quyền truy cập là khách như ban đầu. 
+	\\
+	\hline
+	\texttt{Post conditions} & 
+	1. Người dùng/Phòng ban quản lý đăng xuất thành công.\\
+	&
+	2. Hệ thống ghi nhận thời gian đăng xuất và cập nhật quyền truy cập.
+	\\
+	\hline
+	\texttt{Exception flow} & Không có.\\
+	\hline
+	\texttt{Special requirements} & Không có.\\
+	\hline
+	\texttt{Extension points} & Không có.\\
+	\hline
+
+	\caption{\label{table1}Đặc tả cho Use-case Đăng xuất}
+\end{longtable}
+
+\subsubsection{Bảng mô tả Use-case Chia sẻ tài liệu/giáo trình trên thư viện}
+
+\begin{figure}[!htbp]
+	\centering
+	\fbox{\includegraphics[width=0.7\linewidth]{./Pictures//Usecase2/shareDoc.png}}
+	\caption{Use-case Diagram \textit{Chia sẻ tài liệu/giáo trình trên thư viện}}
+\end{figure}
+
+\begin{longtable}{|p{4.5cm}|p{8cm}|}\hline 
+	\texttt{Use-case ID} & U14\\
+	\hline
+	%%%%%%%%%%%%%%%
+	\texttt{Use-case Name} & Chia sẻ tài liệu/giáo trình trên thư viện\\
+	\hline
+	%%%%%%%%%%%%%%%
+	\texttt{Use-case Overview} & Mô tả chức năng chia sẻ tài liệu/giáo trình khi tutor truy cập vào hệ thống thư viện thông qua \texttt{HCMUT\_LIBRARY}, đăng tải tài liệu lên và lưu trữ.\\
+	\hline
+	\texttt{Actors} & Tutor.\\
+	\hline
+	\texttt{Preconditions} & 
+	Người dùng đăng nhập trên hệ thống trước đó với quyền truy cập là Tutor.
+	\\
+	\hline
+	\texttt{Trigger} & Tutor nhấn vào nút truy cập hệ thống thư viện.\\
+	\hline
+	\texttt{Basic flow} & 
+	1. Sau khi tutor truy cập cổng thư viện, tutor sẽ chọn loại tài liệu muốn đăng tải.\\
+	&
+	2. Tải lên và nhấn nút đăng tải tài liệu.\\
+	&
+	3. Tài liệu vừa đăng tải sẽ được lưu trữ qua \texttt{HCMUT\_LIBRARY}.
+	\\
+	\hline
+	\texttt{Post conditions} & 
+	1. Tutor đăng tải tài liệu/giáo trình thành công.\\
+	&
+	2. Hệ thống thư viện ghi nhận thời gian đăng tải và lưu trữ tài liệu vừa được đăng.
+	\\
+	\hline
+	\texttt{Exception flow} & 
+	Ở bước 2, nếu tutor chọn đăng tải tài liệu vượt kích thước cho phép là 5GB, hệ thống sẽ báo lỗi và yêu cầu chọn lại tài liệu khác để đăng tải.\\
+	\hline
+	\texttt{Special requirements} & Không có.\\
+	\hline
+	\texttt{Extension points} & Khi tutor nhấn vào nút xem quy định tài liệu, quy định đó sẽ được hiển thị. Bao gồm các loại tài liệu không được đăng tải như: không đúng với thuần phong mỹ tục, không phù hợp với nội quy học đường,\ldots và kích thước tài liệu ở mức cho phép.\\
+	\hline
+	
+	\caption{\label{table2}Đặc tả cho Use-case Chia sẻ tài liệu/giáo trình trên thư viện}
+\end{longtable}
+
+\subsubsection{Bảng mô tả Use-case Phòng Đào tạo xem báo cáo tổng quan}
+
+\begin{figure}[H]
+	\centering
+	\fbox{\includegraphics[width=0.7\linewidth]{./Pictures//Usecase2/phongdt.png}}
+	\caption{Use-case Diagram \textit{Phòng Đào tạo xem báo cáo tổng quan}}
+\end{figure}
+
+\begin{tabular}{|p{4.5cm}|p{8cm}|}\hline 
+	\texttt{Use-case ID} & U16\\
+	\hline
+	%%%%%%%%%%%%%%%
+	\texttt{Use-case Name} & Phòng Đào tạo xem báo cáo tổng quan\\
+	\hline
+	%%%%%%%%%%%%%%%
+	\texttt{Use-case Overview} & Mô tả chức năng xem báo cáo tổng quan gồm đánh giá, phản hồi chất lượng buổi học của sinh viên và thông tin từ tutor ghi nhận tiến bộ của sinh viên.\\
+	\hline
+	\texttt{Actors} & Phòng Đào tạo.\\
+	\hline
+	\texttt{Preconditions} & 
+	Người dùng đăng nhập trên hệ thống trước đó với quyền truy cập là Phòng Đào tạo.
+	\\
+	\hline
+	\texttt{Trigger} & Phòng Đào tạo truy cập vào phần đánh giá của sinh viên/phần thông tin từ tutor ghi nhận tiến bộ của sinh viên.\\
+	\hline
+	\texttt{Basic flow} & 
+
+	1. Khi Phòng Đào tạo truy cập vào phần đánh giá của sinh viên, hệ thống hiển thị tất cả các đánh giá của sinh viên (chưa lọc).\\
+	&
+	2. Khi Phòng Đào tạo truy cập vào phần thông tin từ tutor ghi nhận tiến bộ của sinh viên, hệ thống hiển thị tất cả các ghi nhận của tutor (chưa lọc).\\	\hline
+	\texttt{Post conditions} & 
+	1. Phòng Đào tạo thu thập thông tin cho báo cáo tổng quan từ sinh viên và tutor.\\
+	&
+	2. Phòng Đào tạo dựa trên báo cáo tổng quan nhằm tối ưu phân bổ nguồn lực.
+	\\
+	\hline
+	\texttt{Exception flow} & 
+	Ở bước 1 và 2, nếu phòng Đào tạo chọn bộ lọc: xem theo thời gian viết đánh giá/ghi nhận hoặc xem theo từng buổi học, hệ thống sẽ lọc các dữ liệu đánh giá theo lựa chọn.\\
+	\hline
+	\texttt{Special requirements} & Không có.\\
+	\hline
+	\texttt{Extension points} & Không có.\\
+	\hline
+	
+\end{tabular}
+\captionof{table}{\label{table3}Đặc tả cho Use-case Phòng Đào tạo xem báo cáo tổng quan}

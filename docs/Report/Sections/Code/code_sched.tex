@@ -1,0 +1,425 @@
+\subsection{Bộ định thời -- Scheduler}
+
+\subsubsection{\texttt{sched.h}}
+
+\begin{itemize}
+    \item \texttt{\#ifndef MLQ\_SCHED}, \texttt{\#define MLQ\_SCHED} và \texttt{\#endif}: Nếu cờ \texttt{MLQ\_SCHED} không được định nghĩa, thì nó sẽ được định nghĩa.
+    \item Định nghĩa \texttt{MAX\_PRIO} là 140: Mức độ ưu tiên tối đa của các tiến trình trong hệ thống.
+    \item Định nghĩa hàm \texttt{queue\_empty()}: Kiểm tra xem tất cả các hàng đợi có trống không (còn tiến trình nào không). 
+    \item Các hàm quản lý bộ lập lịch:
+    \begin{itemize}
+        \item \texttt{init\_scheduler()}: Khởi tạo hệ thống lập lịch, bao gồm việc khởi tạo các hàng đợi và gán giá trị ban đầu.
+        \item \texttt{finish\_scheduler()}: Giải phóng tài nguyên, dọn dẹp các hàng đợi khi chương trình kết thúc.
+    \end{itemize}
+    \item Các hàm thao tác với tiến trình:
+    \begin{itemize}
+        \item \texttt{get\_proc()}: Lấy tiến trình tiếp theo từ hàng đợi \texttt{ready\_queue} để CPU thực thi.
+        \item \texttt{put\_proc(struct pcb\_t *proc)}: Đặt tiến trình đang thực thi trở lại hàng đợi \texttt{run\_queue}.
+        \item \texttt{add\_proc(struct pcb\_t *proc)}: Thêm một tiến trình mới vào hàng đợi \texttt{ready\_queue}.
+    \end{itemize}
+    \item Khi sử dụng \texttt{Multi-Level Queue Scheduling (MLQ\_SCHED)}:
+    \begin{itemize}
+        \item \texttt{update\_slot(uint32\_t prio, int used\_time)}: Cập nhật số slot còn lại cho hàng đợi prio sau khi một tiến trình đã sử dụng used\_time đơn vị thời gian.
+        \item \texttt{init\_slot()}: Khởi tạo slot thời gian cho mỗi mức độ ưu tiên.
+        \item \texttt{get\_slot(uint32\_t prio)}: Trả về số slot còn lại tương ứng với mức độ ưu tiên prio.
+        \item \texttt{get\_mlq\_proc()}: Lấy một tiến trình từ hàng đợi \texttt{mlq\_ready\_queue} theo mức độ ưu tiên và số slot.
+        \item \texttt{put\_mlq\_proc(struct pcb\_t *proc)}: Đưa tiến trình trở lại hàng đợi ưu tiên sau khi nó đã chiếm CPU.
+        \item \texttt{add\_mlq\_proc(struct pcb\_t *proc)}: Thêm tiến trình mới vào đúng hàng đợi theo mức độ ưu tiên.
+    \end{itemize}
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+#ifndef QUEUE_H
+#define QUEUE_H
+
+#include "common.h"
+
+#ifndef MLQ_SCHED
+#define MLQ_SCHED
+#endif
+
+#ifdef MLQ_SCHED
+int get_slot(uint32_t prio);                    
+void update_slot(uint32_t prio, int used_time);
+void reset_slot();                             
+
+struct pcb_t *get_mlq_proc(void);
+void put_mlq_proc(struct pcb_t *proc);
+void add_mlq_proc(struct pcb_t *proc);
+#endif
+
+#define MAX_PRIO 140
+
+int queue_empty(void);
+
+void init_scheduler(void);
+void finish_scheduler(void);
+
+/* Get the next process from ready queue */
+struct pcb_t *get_proc(void);
+
+/* Put a process back to run queue */
+void put_proc(struct pcb_t *proc);
+
+/* Add a new process to ready queue */
+void add_proc(struct pcb_t *proc);
+
+#endif
+\end{lstlisting}
+
+
+\subsubsection{\texttt{sched.c}}
+
+\subsubsubsection{Hàm \texttt{queue\_empty}}
+
+Chức năng: Hiện thực hàm \texttt{queue\_empty()} để kiểm tra tất cả hàng đợi có trống không.
+
+\begin{itemize}
+    \item Nếu \texttt{MLQ\_SCHED} được định nghĩa, ta sử dụng vòng lặp kiểm tra từng hàng đợi của \texttt{mlq\_ready\_queue}. Nếu có hàng đợi nào không rỗng, hàm trả về 0 để báo hàng đợi hiện đang không rỗng. Sau khi kiểm tra tất cả hàng đợi trong \texttt{mlq\_ready\_queue} đều trống, hàm trả về 1.
+    \item Nếu \texttt{MLQ\_SCHED} không được định nghĩa, ta trả về giá trị của việc kiểm tra rỗng của 2 hàng đợi \texttt{ready\_queue} và \texttt{run\_queue}. Nếu cả 2 hàng đợi này đều rỗng, hàm trả về 1. Nếu một trong hai hoặc cả 2 hàng đợi không rỗng, hàm trả về 0.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int queue_empty(void)
+{
+#ifdef MLQ_SCHED
+    unsigned long prio;
+    for (prio = 0; prio < MAX_PRIO; prio++)
+        if (!empty(&mlq_ready_queue[prio]))
+            return 0;
+    return 1;
+#else
+    return (empty(&ready_queue) && empty(&run_queue));
+#endif
+}
+\end{lstlisting}
+
+
+
+\subsubsubsection{Hàm \texttt{init\_scheduler}}
+
+Chức năng: Hiện thực hàm \texttt{init\_scheduler()} để khởi tạo hệ thống lập lịch.
+
+\begin{itemize}
+    \item Nếu \texttt{MLQ\_SCHED} được định nghĩa, ta sử dụng vòng lặp để gán kích thước của mỗi hàng đợi trong \texttt{mlq\_ready\_queue} bằng 0 và tính số \texttt{slot}. Số \texttt{slot} của mỗi mức độ ưu tiên được tính theo công thức \texttt{MAX\_PRIO - i}, với \texttt{i} là chỉ số mức độ ưu tiên. Hàng đợi 0 có số \texttt{slot} lớn nhất, và hàng đợi \texttt{MAX\_PRIO - 1} có số \texttt{slot} nhỏ nhất.
+    \item Nếu \texttt{MLQ\_SCHED} không được định nghĩa, ta gán kích thước của các hàng đợi \texttt{ready\_queue}, \texttt{run\_queue} và \texttt{running\_list} bằng 0. Sau đó, ta khởi tạo khóa \texttt{mutex} để đảm bảo an toàn trong việc truy cập đa luồng.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+void init_scheduler(void)
+{
+#ifdef MLQ_SCHED
+    int i;
+
+    for (i = 0; i < MAX_PRIO; i++)
+    {
+        mlq_ready_queue[i].size = 0;
+        slot[i] = MAX_PRIO - i;
+    }
+#endif
+    ready_queue.size = 0;
+    run_queue.size = 0;
+    running_list.size = 0;
+    pthread_mutex_init(&lock, NULL);
+}
+\end{lstlisting}
+
+
+\subsubsubsection{Hàm \texttt{finish\_scheduler}}
+
+Chức năng: Hiện thực hàm \texttt{finish\_scheduler()} để giải phóng tài nguyên và dọn dẹp các hàng đợi khi chương trình kết thúc.
+
+\begin{itemize}
+    \item Đầu tiên, ta gọi \texttt{clear\_queue} cho các hàng đợi \texttt{ready\_queue}, \texttt{run\_queue} và \texttt{running\_list} để làm trống các hàng đợi và cho kích thước các hàng đợi này về 0.
+    \item Nếu \texttt{MLQ\_SCHED} được định nghĩa, ta sử dụng vòng lặp để làm trống các hàng đợi trong \texttt{mlq\_ready\_queue} bằng hàm \texttt{clear\_queue}.
+    \item Sau khi dọn xong các hàng đợi, ta giải phóng khóa \texttt{mutex} bằng hàm \texttt{pthread\_mutex\_destroy}, đảm bảo không còn tài nguyên hệ thống bị chiếm giữ.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+void finish_scheduler(void)
+{
+    clear_queue(&ready_queue);
+    clear_queue(&run_queue);
+    clear_queue(&running_list);
+
+#ifdef MLQ_SCHED
+    for (int i = 0; i < MAX_PRIO; i++)
+    {
+        clear_queue(&mlq_ready_queue[i]);
+    }
+#endif
+
+    pthread_mutex_destroy(&lock);
+}
+\end{lstlisting}
+
+
+
+\textbf{Khi MLQ\_SCHED được định nghĩa}
+
+\subsubsubsection{Hàm \texttt{update\_slot}, \texttt{reset\_slot} và \texttt{get\_slot}}
+
+Chức năng: Hiện thực hàm \texttt{update\_slot(uint32\_t prio, int used\_time)}, hàm \texttt{reset\_slot()} và hàm int \texttt{get\_slot(uint32\_t prio)} để quản lý slot tốt hơn.
+
+\begin{itemize}
+    \item Hàm \texttt{update\_slot(uint32\_t prio, int used\_time)} cập nhật số slot còn lại của hàng đợi theo mức độ ưu tiên prio bằng cách lấy số slot trừ đi \texttt{used\_time} slot CPU mà tiến trình đã sử dụng.
+    \item Hàm \texttt{reset\_slot()} dùng để thiết lập lại số slot ở mỗi hàng đợi của từng mức độ ưu tiên. Số \texttt{slot} của mỗi mức độ ưu tiên bằng \texttt{MAX\_PRIO - i}, với \texttt{i} là chỉ số mức độ ưu tiên.
+    \item Hàm \texttt{get\_slot(uint32\_t prio)} là hàm getter dùng để trả lại số slot còn lại của hàng đợi có mức độ ưu tiên prio.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+void update_slot(uint32_t prio, int used_time)
+{
+    slot[prio] = slot[prio] - used_time;
+}
+
+void reset_slot()
+{
+    for (int i = 0; i < MAX_PRIO; i++)
+    {
+        slot[i] = MAX_PRIO - i;
+    }
+}
+
+int get_slot(uint32_t prio)
+{
+    return slot[prio];
+}
+\end{lstlisting}
+
+\subsubsubsection{Hàm \texttt{get\_proc} và \texttt{get\_mlq\_proc} khi MLQ\_SCHED được định nghĩa}
+
+Chức năng: Hiện thực hàm \texttt{get\_proc()} và hàm \texttt{get\_mlq\_proc()} để lấy một tiến trình từ hàng đợi \texttt{mlq\_ready\_queue} theo mức độ ưu tiên và số slot.
+
+\begin{itemize}
+    \item Trong hệ thống MLQ, hàm \texttt{get\_proc()} sẽ gọi hàm \texttt{get\_mlq\_proc()} để trả về tiến trình theo cách duyệt từ mức độ ưu tiên cao xuống thấp. Nếu không lấy được tiến trình nào, hàm trả về \texttt{NULL}.
+    \item Biến \texttt{curr\_prio} dùng để duyệt các hàng đợi theo mức độ ưu tiên từ cao (0) đến thấp (\texttt{MAX\_PRIO - 1}). Biến \texttt{count\_empty} dùng để đếm số hàng đợi rỗng trong \texttt{mlq\_ready\_queue}. Sau đó, ta sử dụng vòng lặp while để duyệt hàng đợi.
+    \item Nếu hàng đợi \textbf{mlq\_ready\_queue} tại \texttt{curr\_prio} không rỗng:
+    \begin{itemize}
+        \item Nếu số slot của mức độ ưu tiên hiện tại lớn hơn 0, ta lấy \texttt{proc} ra khỏi \texttt{mlq\_ready\_queue[curr\_prio]} bằng hàm \texttt{dequeue} và break ra khỏi vòng lặp.
+        \item Nếu số slot của mức độ ưu tiên hiện tại bé hơn hoặc bằng 0, ta chuyển sang mức độ ưu tiên tiếp theo. Nếu ta đã duyệt được 1 chu kỳ và \texttt{curr\_prio} về lại 0, ta gán lại biến \texttt{count\_empty} bằng 0 và thiết lập lại slot của tất cả mức độ ưu tiên bằng hàm \texttt{reset\_slot()}. Ta sử dụng \texttt{continue} để chuyển sang vòng lặp với curr\_prio kế tiếp.
+    \end{itemize}
+    \item Nếu hàng đợi \textbf{mlq\_ready\_queue} tại \texttt{curr\_prio} rỗng:
+    \begin{itemize}
+        \item Ta tăng biến \texttt{count\_empty} lên 1 đơn vị. 
+        \item Nếu tất cả hàng đợi ở tất cả mức độ ưu tiên đều rỗng, ta dùng \texttt{break} để thoát khỏi vòng lặp.
+        \item Sau đó, ta chuyển sang mức độ ưu tiên tiếp theo. Nếu ta đã duyệt được 1 chu kỳ, ta thiết lập biến \texttt{count\_empty} về 0 và sử dụng hàm \texttt{reset\_slot()} để thiết lập lại slot ở tất cả mức độ ưu tiên. Tiếp đó, ta lại gọi \texttt{continue} để sang vòng lặp tiếp theo với mức độ ưu tiên mới cập nhật.
+    \end{itemize}
+    \item Khi đã xong vòng lặp, ta trả về tiến trình \texttt{proc}.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+struct pcb_t *get_mlq_proc(void)
+{
+    struct pcb_t *proc = NULL;
+    int curr_prio = 0;
+    int count_empty = 0;
+
+    pthread_mutex_lock(&lock);
+
+    while (1)
+    {
+        if (!empty(&mlq_ready_queue[curr_prio]))
+        {
+            if (slot[curr_prio] > 0)
+            {
+                // Found a process to run
+                proc = dequeue(&mlq_ready_queue[curr_prio]);
+                break;
+            }
+            else
+            {
+                // Queue has process but no slot left, move to next
+                curr_prio = (curr_prio + 1) % MAX_PRIO;
+                if (curr_prio == 0)
+                {
+                    count_empty = 0;
+                    reset_slot();
+                }
+                continue;
+            }
+        }
+        else
+        {
+            // Queue is empty
+            count_empty++;
+            if (count_empty == MAX_PRIO)
+            {
+                // All queues are empty
+                break;
+            }
+
+            curr_prio = (curr_prio + 1) % MAX_PRIO;
+            if (curr_prio == 0)
+            {
+                count_empty = 0;
+                reset_slot();
+            }
+            continue;
+        }
+    }
+
+    pthread_mutex_unlock(&lock);
+    return proc;
+}
+
+struct pcb_t *get_proc(void)
+{
+    return get_mlq_proc();
+}
+
+\end{lstlisting}
+
+
+
+\subsubsubsection{Hàm \texttt{put\_proc} và \texttt{put\_mlq\_proc} khi MLQ\_SCHED được định nghĩa}
+
+Chức năng: Hiện thực hàm \texttt{put\_proc()} và hàm \texttt{put\_mlq\_proc()} để đưa tiến trình trở lại hàng đợi ưu tiên sau khi nó đã chiếm CPU.
+
+\begin{itemize}
+    \item Hàm \texttt{put\_mlq\_proc()} đưa tiến trình proc vào hàng đợi sẵn sàng tương ứng với mức độ ưu tiên của nó (\texttt{mlq\_ready\_queue[proc->prio]}). Việc sử dụng pthread\_mutex\_lock và pthread\_mutex\_unlock giúp đảm bảo an toàn khi nhiều luồng thao tác cùng lúc (tránh race condition).
+    \item Hàm \texttt{put\_proc()} đưa tiến trình đang chạy trở lại vào hệ thống lập lịch. Đầu tiên, ta gán trường \texttt{ready\_queue}, \texttt{mlq\_ready\_queue} và \texttt{running\_list} trong cấu trúc \texttt{proc} để trỏ đến các hàng đợi \texttt{ready\_queue}, \texttt{mlq\_ready\_queue} và \texttt{running\_list}. Sau đó, ta thêm tiến trình vào danh sách các tiến trình đang chạy và gọi hàm \texttt{put\_mlq\_proc()} để đưa tiến trình trở lại đúng hàng đợi theo mức độ ưu tiên của nó. Ta cũng dùng khóa mutex với mục đích giống với mục đích được đề cập ở trên.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+void put_mlq_proc(struct pcb_t *proc)
+{
+    pthread_mutex_lock(&lock);
+    enqueue(&mlq_ready_queue[proc->prio], proc);
+    pthread_mutex_unlock(&lock);
+}
+
+void put_proc(struct pcb_t *proc)
+{
+    proc->ready_queue = &ready_queue;
+    proc->mlq_ready_queue = mlq_ready_queue;
+    proc->running_list = &running_list;
+
+    /* TODO: put running proc to running_list */
+    pthread_mutex_lock(&lock);
+    enqueue(&running_list, proc);
+    pthread_mutex_unlock(&lock);
+    put_mlq_proc(proc);
+}
+\end{lstlisting}
+
+
+
+\subsubsubsection{Hàm \texttt{add\_proc} và \texttt{add\_mlq\_proc} khi MLQ\_SCHED được định nghĩa}
+
+Chức năng: Hiện thực hàm \texttt{add\_proc()} và hàm \texttt{add\_mlq\_proc()} để thêm tiến trình mới vào đúng hàng đợi theo mức độ ưu tiên.
+
+\begin{itemize}
+    \item Hàm \texttt{add\_mlq\_proc()} thêm tiến trình \texttt{proc} vào hàng đợi \texttt{mlq\_ready\_queue[proc->prio]}, hàng đợi sẵn sàng tương ứng với mức độ ưu tiên của tiến trình. Ta cũng sử dụng khóa mutex trong hàm này để tránh tình trạng xung đột giữa các luồng. 
+    \item Hàm \texttt{add\_proc()} dùng để thêm một tiến trình mới vào hệ thống lập lịch. Đầu tiên, hàm gán các trường \texttt{ready\_queue}, \texttt{mlq\_ready\_queue} và \texttt{running\_list} trong cấu trúc \texttt{proc} để liên kết tiến trình với các hàng đợi liên quan. Sau đó, tiến trình được thêm vào danh sách các tiến trình đang chạy bằng cách gọi \texttt{enqueue(\&running\_list, proc)}. Cuối cùng, hàm gọi \texttt{add\_mlq\_proc()} để thêm tiến trình vào đúng hàng đợi ưu tiên (\texttt{mlq\_ready\_queue}) để chờ được lập lịch thực thi.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+void add_mlq_proc(struct pcb_t *proc)
+{
+    pthread_mutex_lock(&lock);
+    enqueue(&mlq_ready_queue[proc->prio], proc);
+    pthread_mutex_unlock(&lock);
+}
+
+void add_proc(struct pcb_t *proc)
+{
+    proc->ready_queue = &ready_queue;
+    proc->mlq_ready_queue = mlq_ready_queue;
+    proc->running_list = &running_list;
+
+    /* TODO: put running proc to running_list */
+    pthread_mutex_lock(&lock);
+    enqueue(&running_list, proc);
+    pthread_mutex_unlock(&lock);
+    add_mlq_proc(proc);
+}
+\end{lstlisting}
+
+
+
+
+\textbf{Khi MLQ\_SCHED không được định nghĩa}
+\subsubsubsection{Hàm \texttt{get\_proc} khi MLQ\_SCHED không được định nghĩa}
+
+Chức năng: Hiện thực hàm \texttt{get\_proc()} để lấy tiến trình tiếp theo từ hàng đợi \texttt{ready\_queue} để CPU thực thi.
+
+\begin{itemize}
+    \item Đầu tiên, ta khai báo một con trỏ \texttt{proc} kiểu \texttt{struct pcb\_t} và gán giá trị ban đầu là \texttt{NULL}.
+    \item Để đảm bảo an toàn khi truy cập hàng đợi trong môi trường đa luồng, ta khóa \texttt{mutex} bằng hàm \texttt{pthread\_mutex\_lock}.
+    \item Sau đó, ta kiểm tra nếu hàng đợi \texttt{ready\_queue} không rỗng, thì ta lấy tiến trình đầu tiên ra khỏi hàng đợi bằng \texttt{dequeue} và gán cho \texttt{proc}.
+    \item Sau khi thao tác xong với hàng đợi, ta mở khóa \texttt{mutex} bằng \texttt{pthread\_mutex\_unlock}.
+    \item Cuối cùng, hàm trả về tiến trình \texttt{proc}.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+struct pcb_t *get_proc(void)
+{
+    struct pcb_t *proc = NULL;
+    /*TODO: get a process from [ready_queue].
+     * Remember to use lock to protect the queue.
+     * */
+    pthread_mutex_lock(&lock);
+    if (!empty(&ready_queue))
+    {
+        proc = dequeue(&ready_queue);
+    }
+    pthread_mutex_unlock(&lock);
+    return proc;
+}
+\end{lstlisting}
+
+\subsubsubsection{Hàm \texttt{put\_proc} khi MLQ\_SCHED không được định nghĩa}
+
+
+Chức năng: Hiện thực hàm \texttt{put\_proc()} để đặt tiến trình đang thực thi trở lại hàng đợi \texttt{run\_queue}.
+
+\begin{itemize}
+    \item Đầu tiên, ta gán trường \texttt{ready\_queue} và \texttt{running\_list} trong cấu trúc \texttt{proc} để trỏ đến các hàng đợi tương ứng \texttt{ready\_queue} và \texttt{running\_list}.
+    \item Sau đó, ta khóa \texttt{mutex} bằng \texttt{pthread\_mutex\_lock} để đảm bảo an toàn khi truy cập đa luồng.
+    \item Tiến trình \texttt{proc} được thêm vào \texttt{running\_list} và \texttt{run\_queue} thông qua hàm \texttt{enqueue}.
+    \item Sau khi thêm xong, ta mở khóa \texttt{mutex} bằng \texttt{pthread\_mutex\_unlock}.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+void put_proc(struct pcb_t *proc)
+{
+    proc->ready_queue = &ready_queue;
+    proc->running_list = &running_list;
+
+    /* TODO: put running proc to running_list */
+
+    pthread_mutex_lock(&lock);
+    enqueue(&running_list, proc);
+    enqueue(&run_queue, proc);
+    pthread_mutex_unlock(&lock);
+}
+\end{lstlisting}
+
+\subsubsubsection{Hàm \texttt{add\_proc} khi MLQ\_SCHED không được định nghĩa}
+
+Chức năng: Hiện thực hàm \texttt{add\_proc()} để thêm một tiến trình mới vào hàng đợi \texttt{ready\_queue}
+
+\begin{itemize}
+    \item Đầu tiên, ta gán trường \texttt{ready\_queue} và \texttt{running\_list} trong cấu trúc \texttt{proc} để trỏ đến các hàng đợi \texttt{ready\_queue} và \texttt{running\_list}.
+    \item Tiếp theo, ta khóa \texttt{mutex} bằng \texttt{pthread\_mutex\_lock} để đảm bảo việc truy cập các hàng đợi được an toàn trong môi trường đa luồng.
+    \item Tiến trình \texttt{proc} được thêm vào \texttt{running\_list} và \texttt{ready\_queue} thông qua hàm \texttt{enqueue}.
+    \item Sau khi thêm tiến trình vào các hàng đợi, ta mở khóa \texttt{mutex} bằng \texttt{pthread\_mutex\_unlock} để đảm bảo không có sự tranh chấp tài nguyên.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+void add_proc(struct pcb_t *proc)
+{
+    proc->ready_queue = &ready_queue;
+    proc->running_list = &running_list;
+
+    /* TODO: put running proc to running_list */
+
+    pthread_mutex_lock(&lock);
+    enqueue(&running_list, proc);
+    enqueue(&ready_queue, proc);
+    pthread_mutex_unlock(&lock);
+}
+\end{lstlisting}
+
+

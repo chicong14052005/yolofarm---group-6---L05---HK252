@@ -5,8 +5,8 @@ const notificationService = require('./notificationService');
 const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
 const MET_NO_URL = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
 const OPEN_METEO_PARAMS = {
-  latitude: 10.823,
-  longitude: 106.6296,
+  latitude: 10.883873,
+  longitude: 106.782022,
   current: 'temperature_2m,relative_humidity_2m,is_day',
   hourly: 'soil_moisture_3_to_9cm',
   minutely_15: 'direct_radiation',
@@ -29,7 +29,7 @@ const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
 
 const getVietnamNow = () => {
   const now = new Date();
-  const vnDateText = now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+  const vnDateText = now.toLocaleString('en-US', { timeZone: 'Asia/Ho_Chi_Minh' });
   return new Date(vnDateText);
 };
 
@@ -125,11 +125,19 @@ const fetchFromMetNo = async () => {
 
   const vnNow = getVietnamNow();
   const hour = vnNow.getHours();
-  const isDay = hour >= 6 && hour < 18;
+  const minute = vnNow.getMinutes();
+  const currentTime = hour + minute / 60;
+  const isDay = currentTime >= 5 && currentTime < 18.5;
 
   // Approximate soil moisture from humidity + precipitation when fallback source lacks soil sensor.
   const soilMoisture = clamp(Math.round(humidity * 0.35 + Number(precipitation1h) * 8 + 20), 10, 90);
-  const estimatedRadiation = isDay ? Math.max(0, ((100 - cloudPercent) / 100) * 700) : 0;
+  
+  let estimatedRadiation = 0;
+  if (isDay) {
+    // Sử dụng hàm sin để nội suy cường độ ánh sáng theo thời gian (cao điểm lúc 12h trưa)
+    const solarElevationFactor = Math.sin(Math.PI * (currentTime - 6) / 12);
+    estimatedRadiation = Math.max(0, solarElevationFactor * ((100 - cloudPercent) / 100) * 700);
+  }
   const lightIntensity = Math.round(estimatedRadiation * 120);
 
   return {

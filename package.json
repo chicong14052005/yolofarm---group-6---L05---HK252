@@ -4,9 +4,10 @@
   "description": "YoloFarm - Smart Agriculture System with AI & IoT",
   "private": true,
   "scripts": {
-    "dev": "pnpm --parallel -r run dev",
+    "dev": "concurrently -k -n client,server,api -c blue,green,yellow \"pnpm --filter client run dev\" \"pnpm --filter server run dev\" \"node scripts/start-api.js\"",
     "dev:client": "pnpm --filter client run dev",
     "dev:server": "pnpm --filter server run dev",
+    "dev:api": "node scripts/start-api.js",
     "install:all": "pnpm install",
     "build": "pnpm --filter client run build"
   },
@@ -17,5 +18,8 @@
     "smart-farming",
     "yolofarm"
   ],
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
 }

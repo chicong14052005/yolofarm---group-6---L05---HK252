@@ -5,15 +5,25 @@ CREATE DATABASE IF NOT EXISTS yolofarm CHARACTER SET utf8mb4 COLLATE utf8mb4_uni
 USE yolofarm;
 
 SET FOREIGN_KEY_CHECKS = 0;
+
 DROP TABLE IF EXISTS privacy_policy;
+
 DROP TABLE IF EXISTS terms;
+
 DROP TABLE IF EXISTS user_preferences;
+
 DROP TABLE IF EXISTS settings;
+
 DROP TABLE IF EXISTS notifications;
+
 DROP TABLE IF EXISTS schedules;
+
 DROP TABLE IF EXISTS sensor_data;
+
 DROP TABLE IF EXISTS devices;
+
 DROP TABLE IF EXISTS users;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Bảng người dùng
@@ -39,11 +49,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS devices (
     id INT AUTO_INCREMENT PRIMARY KEY,
     device_name VARCHAR(50) NOT NULL,
-    device_type ENUM(
-        'pump1',
-        'pump2',
-        'led_rgb'
-    ) NOT NULL,
+    device_type ENUM('pump1', 'pump2', 'led_rgb') NOT NULL,
     feed_key VARCHAR(100),
     status ENUM('on', 'off') DEFAULT 'off',
     manual_override BOOLEAN DEFAULT FALSE,
@@ -144,19 +150,6 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     notifications_enabled BOOLEAN DEFAULT TRUE,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-);
-
--- Bảng điều khoản sử dụng
-CREATE TABLE IF NOT EXISTS terms (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(200) NOT NULL,
-    content TEXT NOT NULL,
-    version INT DEFAULT 1,
-    created_by INT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
 );
 
 -- Tài khoản admin mặc định (password: admin123)
@@ -332,9 +325,24 @@ VALUES (
         'Nông trại của bạn đã giảm 12% lượng nước sử dụng trong tuần này so với tiêu chuẩn địa phương.'
     );
 
--- Điều khoản sử dụng mặc định
+-- Bảng chính sách bảo mật
+CREATE TABLE IF NOT EXISTS privacy_policy (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    content_vi TEXT,
+    content_en TEXT,
+    version INT DEFAULT 1,
+    created_by INT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
+);
+
+-- Chính sách bảo mật mặc định
 INSERT INTO
-    terms (
+    privacy_policy (
         title,
         content,
         version,
@@ -370,38 +378,6 @@ Bạn hoàn toàn làm chủ dữ liệu của mình. Bạn có quyền:
 
 ## 5. Chia sẻ dữ liệu
 **Smart Farm** cam kết tuyệt đối không bán, cho thuê hoặc chia sẻ dữ liệu cá nhân của bạn với bất kỳ bên thứ ba nào, trừ khi có sự đồng ý rõ ràng từ bạn hoặc khi có yêu cầu hợp pháp từ cơ quan chức năng.',
-        1,
-        1,
-        TRUE
-    );
-
--- Bảng chính sách bảo mật
-CREATE TABLE IF NOT EXISTS privacy_policy (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(200) NOT NULL,
-    content TEXT NOT NULL,
-    content_vi TEXT,
-    content_en TEXT,
-    version INT DEFAULT 1,
-    created_by INT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
-);
-
--- Chính sách bảo mật mặc định
-INSERT INTO
-    privacy_policy (
-        title,
-        content,
-        version,
-        created_by,
-        is_active
-    )
-VALUES (
-        'Chính sách bảo mật YoloFarm',
-        'YoloFarm cam kết bảo vệ quyền riêng tư của bạn. Chính sách này mô tả cách chúng tôi thu thập, sử dụng và bảo vệ thông tin cá nhân của bạn.\n\n1. **Thu thập dữ liệu**: Chúng tôi thu thập thông tin tài khoản, dữ liệu cảm biến và lịch sử hoạt động.\n2. **Sử dụng dữ liệu**: Dữ liệu được sử dụng để vận hành hệ thống, phân tích AI và cải thiện dịch vụ.\n3. **Bảo mật dữ liệu**: Mọi dữ liệu được mã hóa và lưu trữ an toàn trên hệ thống.\n4. **Quyền của bạn**: Bạn có quyền truy cập, chỉnh sửa hoặc yêu cầu xóa dữ liệu cá nhân.\n5. **Chia sẻ dữ liệu**: Chúng tôi không chia sẻ dữ liệu cá nhân với bên thứ ba trừ khi có sự đồng ý của bạn.',
         1,
         1,
         TRUE

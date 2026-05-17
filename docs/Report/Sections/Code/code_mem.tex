@@ -1,0 +1,1382 @@
+\subsection{Quản lý bộ nhớ -- Memory Management}
+
+Để hiện thực được phần \textit{"Memory Management"}, ta cần hoàn thiện 4 file:  \texttt{libmem.c}, \texttt{mm-memphy.c}, \texttt{mm-vm.c} và \texttt{mm.c}.
+
+\subsubsection{\texttt{libmem.c}}
+% ----------- NHƯ --------------
+
+Đầu tiên, nhóm em khai báo một khóa mutex để hỗ trợ khi chương trình chạy ở đa luồng, đảm bảo tính đồng bộ và tránh các lỗi race condition xuất hiện trong quá trình thực thi, mô phỏng. Việc sử dụng macro \texttt{PTHREAD\_MUTEX\_INITIALIZER} để khởi tạo một khóa mutex tĩnh, tức mutex mặc định (fast mutex) khi không cần thêm cấu hình gì đặc biệt cho khóa. 
+
+\begin{lstlisting}[style=Cstyle,language=C]
+static pthread_mutex_t mmvm_lock = PTHREAD_MUTEX_INITIALIZER;
+\end{lstlisting} 
+
+\subsubsubsection{Hàm \texttt{enlist\_vm\_freerg\_list}}
+
+Chức năng: Thêm vào danh sách quản lý các vùng nhớ trống \texttt{vm\_freerg\_list} một vùng nhớ mới sau khi kiểm tra kích thước của vùng nhớ trống đó hiện tại có hợp lệ (khác 0). Hàm này đảm bảo rằng chỉ những vùng nhớ có kích thước hợp lệ mới được đưa vào danh sách quản lý các vùng nhớ còn trống.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int enlist_vm_freerg_list(struct mm_struct *mm, struct vm_rg_struct *rg_elmt)
+{
+  struct vm_rg_struct *rg_node = mm->mmap->vm_freerg_list;
+
+  if (rg_elmt->rg_start >= rg_elmt->rg_end)
+    return -1;
+
+  if (rg_node != NULL)
+    rg_elmt->rg_next = rg_node;
+
+  /* Enlist the new region */
+  mm->mmap->vm_freerg_list = rg_elmt;
+
+  return 0;
+}
+\end{lstlisting} 
+
+Hiện tại, chúng ta giả định chủ yếu tập trung vào phân đoạn đầu tiên của vùng bộ nhớ ảo (\texttt{vmaid = 0}) hay giả sử chỉ có một phân đoạn bộ nhớ (hoặc một \texttt{vm\_area}). Tuy nhiên, trong trường hợp tổng quát khi hệ thống hỗ trợ nhiều phân đoạn bộ nhớ, ta có thể cải tiến thêm (nếu có) cho mã nguồn của hàm này: Xử lý chèn vùng nhớ mới theo thứ tự địa chỉ tăng dần trong danh sách vùng nhớ trống. Đồng thời, gộp (merge) vùng nhớ liền kề để tránh bị phân mảnh bộ nhớ và tăng hiệu quả cấp phát lại sau này.  
+
+%Thay đổi so với mã nguồn gốc: Xử lý chèn vùng nhớ mới theo thứ tự địa chỉ tăng dần trong danh sách vùng nhớ trống. Đồng thời, gộp (merge) vùng nhớ liền kề để tránh bị phân mảnh bộ nhớ.
+
+%\begin{itemize}
+%    \item Nếu vùng nhớ có kích thước không hợp lệ, trả về \texttt{-1} để báo lỗi.
+%    \item Duyệt danh sách vùng trống để tìm vị trí chèn \texttt{rg\_elmt} theo thứ tự \texttt{rg\_start} tăng dần.
+%    \item Chèn \texttt{rg\_elmt} vào danh sách tại vị trí đã tìm.
+%    \item Gộp với vùng kế tiếp nếu \texttt{rg\_elmt} nằm sát cur (rg\_end == cur->rg\_start).
+%    \item Gộp với vùng trước đó nếu \texttt{rg\_elmt}  nằm sát *prev ((*prev)->rg\_end == rg\_elmt->rg\_start).
+%    \item Giải phóng vùng cũ đã được gộp.
+%    \item Trả về 0.
+%\end{itemize}
+
+\subsubsubsection{Hàm \texttt{get\_free\_vmrg\_area}}
+
+Chức năng: Lấy một vùng địa chỉ ảo đang trống hợp lệ trong một VMA (\texttt{vm\_area\_struct}) có đủ kích thước (\texttt{size}) để cấp phát, và ghi kết quả vào vùng nhớ mới (\texttt{newrg}).
+
+Trước tiên, gọi \texttt{get\_vma\_by\_num()} để lấy ra vùng VMA cần làm việc, sau đó trỏ tới danh sách liên kết các vùng trống (\texttt{vm\_freerg\_list}) bên trong VMA đó. Nếu danh sách này rỗng (\texttt{NULL}), tức trả về lỗi \texttt{-1}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int get_free_vmrg_area(struct pcb_t *caller, int vmaid, int size, struct vm_rg_struct *newrg)
+{
+  struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
+  struct vm_rg_struct *rgit = cur_vma->vm_freerg_list;
+  struct vm_rg_struct *prev = NULL;
+
+  if (rgit == NULL)
+  {
+    return -1;
+  }
+...
+}
+\end{lstlisting} 
+
+Tiếp theo, vùng được yêu cầu (\texttt{newrg}) sẽ được khởi tạo với các giá trị mặc định -1 để đảm bảo không bị sử dụng sai sau này. Hàm tiến hành duyệt từng node trong danh sách vùng trống, tính kích thước của mỗi vùng bằng hiệu \texttt{rg\_end - rg\_start + 1}, và kiểm tra xem vùng này có đủ chỗ để chứa yêu cầu hay không. Nếu có, \texttt{newrg} sẽ được gán địa chỉ bắt đầu và kết thúc phù hợp, còn phần đầu của vùng trống gốc (\texttt{rgit}) sẽ được đẩy về sau bằng cách tăng \texttt{rg\_start}. Trong trường hợp toàn bộ vùng trống đã bị chiếm hết (tức \texttt{rg\_start > rg\_end}), node đó sẽ bị loại khỏi danh sách liên kết và giải phóng bộ nhớ. Cuối cùng, nếu tìm thấy vùng hợp lệ, hàm trả về 0, còn nếu duyệt hết danh sách mà không có vùng nào đủ lớn, hàm trả về -1.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm get_free_vmrg_area */
+  /* Probe unintialized newrg */
+  newrg->rg_start = -1;
+  newrg->rg_end = -1;
+
+  /* TODO Traverse on list of free vm region to find a fit space */
+  while (rgit != NULL)
+  {
+    unsigned long sizeOfFreeVMReg = rgit->rg_end - rgit->rg_start + 1;
+
+    if (sizeOfFreeVMReg >= size)
+    {
+      newrg->rg_start = rgit->rg_start;
+      newrg->rg_end = rgit->rg_start + size - 1;
+
+      rgit->rg_start += size;
+
+      if (rgit->rg_start > rgit->rg_end)
+      {
+        if (prev == NULL)
+          cur_vma->vm_freerg_list = rgit->rg_next;
+        else
+          prev->rg_next = rgit->rg_next;
+
+        free(rgit);
+      }
+
+      return 0;
+    }
+
+    prev = rgit;
+    rgit = rgit->rg_next;
+  }
+
+  return -1;
+}
+\end{lstlisting} 
+
+\subsubsubsection{Hàm \texttt{\_\_alloc}}
+
+Chức năng: Cấp phát một vùng nhớ mới dựa trên vùng nhớ trống hiện tại. Nếu không đủ thì mở rộng giới hạn cấp phát (\texttt{sbrk}) thông qua lời gọi SYSCALL 17.
+
+Trước tiên, ta khóa vùng nhớ ảo bằng \texttt{pthread\_mutex\_lock} cho trường hợp nhiều luồng cùng truy cập vùng nhớ nhằm đảm bảo sự đồng bộ.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int __alloc(struct pcb_t *caller, int vmaid, int rgid, int size, int *alloc_addr)
+{
+  pthread_mutex_lock(&mmvm_lock);
+
+  /*Allocate at the toproof */
+  struct vm_rg_struct rgnode;
+...
+}
+\end{lstlisting} 
+
+Bắt đầu việc tìm vùng nhớ trống phù hợp qua lời gọi hàm \texttt{get\_free\_vmrg\_area}: Nếu tìm thấy (\texttt{get\_free\_vmrg\_area == 0}), cấp phát từ vùng này, lưu lại trong bảng vùng nhớ (\texttt{symrbtbl[rgid]}) từ \texttt{rg\_start} đến \texttt{rg\_end} và ghi nhận địa chỉ vào \texttt{alloc\_addr}, bắt đầu từ \texttt{rg\_start}. Mở khóa mutex và trả về \texttt{0} (thành công).
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm __alloc */
+  /* TODO get_free_vmrg_area SUCCEEDED */
+  if (get_free_vmrg_area(caller, vmaid, size, &rgnode) == 0)
+  {
+    caller->mm->symrgtbl[rgid].rg_start = rgnode.rg_start;
+    caller->mm->symrgtbl[rgid].rg_end = rgnode.rg_end;
+    *alloc_addr = rgnode.rg_start;
+
+    pthread_mutex_unlock(&mmvm_lock);
+    return 0;
+  }
+ \end{lstlisting} 
+
+Nếu không tìm thấy, tiến hành mở rộng giới hạn cấp phát \texttt{sbrk} thông qua lời gọi SYSCALL 17 \texttt{sys\_memmap}, truyền tham số bằng các thanh ghi (\texttt{regs.a1, regs.a2, regs.a3}) tương ứng: 
+
+\begin{itemize}
+    \item \texttt{regs.a1} truyền vào cờ hiệu \texttt{SYSMEM\_INC\_OP} để tăng giới hạn bộ nhớ với hàm \texttt{inc\_vma\_limit()} trong file \texttt{mm-memphy.c}.
+    \item \texttt{regs.a2} truyền vào chỉ số ID của vùng nhớ cần được cấp phát (\texttt{vmaid}).
+    \item \texttt{regs.a3} truyền vào kích thước cấp phát (ở đây truyền vào kích thước chưa được căn chỉnh (\texttt{size}) vì trong hàm kia sẽ tiến hành căn chỉnh lại kích thước đã được căn lề trang bằng \texttt{PAGING\_PAGE\_ALIGNSZ}).
+\end{itemize}
+
+Nếu mở rộng không thành công, đánh dấu cờ (\texttt{flags}) của thanh ghi và trả về lỗi là \texttt{-1}, ngược lại đánh dấu cờ là \texttt{0} và tiếp tục.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm __alloc */
+  /* TODO get_free_vmrg_area FAILED handle the region management (Fig.6)*/
+  /* TODO retrive current vma if needed, current comment out due to compiler redundant warning*/
+  /*Attempt to increate limit to get space */
+  struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
+
+  if (!cur_vma)
+  {
+    pthread_mutex_unlock(&mmvm_lock);
+    return -1;
+  }
+
+  /* TODO retrive old_sbrk if needed, current comment out due to compiler redundant warning*/
+  int old_sbrk = cur_vma->sbrk;
+
+  /* TODO INCREASE THE LIMIT as invoking systemcall
+   * sys_memap with SYSMEM_INC_OP
+   */
+  struct sc_regs regs;
+  regs.a1 = SYSMEM_INC_OP;
+  regs.a2 = vmaid;
+  regs.a3 = size;
+
+  /* SYSCALL 17 sys_memmap */
+  regs.orig_ax = 17;
+  if (syscall(caller, regs.orig_ax, &regs) != 0) // nếu mở rộng không thành công
+  {
+    regs.flags = -1; // failed
+    pthread_mutex_unlock(&mmvm_lock);
+    return -1;
+  }
+
+  regs.flags = 0; // successful
+\end{lstlisting} 
+
+Sau khi syscall mở rộng bộ nhớ ảo thành công, cập nhật vùng nhớ mới vào bảng \texttt{symrgtbl} và ghi lại \texttt{alloc\_addr} bắt đầu ở vị trí \texttt{sbrk} cũ đã lưu dựa trên \texttt{sbrk} trước đó (\texttt{old\_sbrk}), vì ta không lấy từ vùng trống trong danh sách các vùng trống hiện có. Điểm cuối của vùng nhớ vừa được mở rộng là kích thước cấp phát \texttt{size}. Nếu sau vùng cấp phát còn một phần trống khi so sánh với điểm cuối của vùng nhớ ảo hiện tại, phần thừa này sẽ được đưa vào danh sách vùng nhớ trống bằng hàm \texttt{enlist\_vm\_freerg\_list}. Cuối cùng, mở khóa mutex và trả về \texttt{0} (thành công).
+
+\pagebreak
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm __alloc */
+  /* TODO: commit the limit increment */
+  caller->mm->symrgtbl[rgid].rg_start = old_sbrk;
+  caller->mm->symrgtbl[rgid].rg_end = old_sbrk + size;
+
+  /* TODO: commit the allocation address */
+  *alloc_addr = old_sbrk;
+
+  if (old_sbrk + size < cur_vma->vm_end)
+  {
+    struct vm_rg_struct *rgnode = malloc(sizeof(struct vm_rg_struct));
+    rgnode->rg_start = old_sbrk + size;
+    rgnode->rg_end = cur_vma->vm_end;
+
+    enlist_vm_freerg_list(caller->mm, rgnode);
+  }
+
+  pthread_mutex_unlock(&mmvm_lock);
+  return 0;
+}
+\end{lstlisting} 
+
+\subsubsubsection{Hàm \texttt{liballoc}}
+
+Chức năng: Là một wrapper nhằm gọi hàm \texttt{\_\_alloc} để cấp phát thực sự và in ra thông tin cần Debug hoặc kiểm thử.
+
+Trước tiên, khởi tạo biến \texttt{addr} lưu trữ vị trí bắt đầu cho vùng cấp phát, biến \texttt{val} lưu trữ trạng thái thành công hoặc lỗi sau khi gọi hàm \texttt{\_\_alloc}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int liballoc(struct pcb_t *proc, uint32_t size, uint32_t reg_index)
+{
+  int addr;
+  int val = __alloc(proc, 0, reg_index, size, &addr);
+...
+}
+\end{lstlisting} 
+
+Nếu kết quả hiển thị mong muốn hiện ra thông tin của bộ nhớ vật lý sau khi cấp phát và để kiểm thử Output, tiến hành in ra các thông tin cần thiết của bảng trang thông qua cờ hiệu \texttt{PAGETBL\_DUMP}, thông tin bộ nhớ vật lý sau khi cấp phát thành công thông qua cờ hiệu \texttt{MMDBG}, thông tin bộ nhớ ảo thông qua cờ hiệu \texttt{VMDBG} và thông tin tác vụ của process thông qua cờ hiệu \texttt{IODUMP}. Các cờ hiệu này được kích hoạt nếu được định nghĩa trong file \texttt{os-cfg.h}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong os-cfg.h */
+#define MMDBG          // Print Memory Management Debug
+#define VMDBG          // Print Virtual Memory Debug
+#define IODUMP 1       // Print I/O Dump
+#define PAGETBL_DUMP 1 // Print Page Table Dump
+\end{lstlisting} 
+\pagebreak
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm liballoc */ 
+#ifdef IODUMP
+  printf("===== PROCESS'S INSTRUCTION =====\n");
+  printf("Now doing %s\n", "ALLOC");
+  printf("================================================================\n");
+#endif
+#ifdef VMDBG
+  struct vm_area_struct *vma = get_vma_by_num(proc->mm, 0);
+  print_mem_status(proc, vma);
+#endif
+#ifdef MMDBG
+  printf("===== PHYSICAL MEMORY AFTER ALLOCATION =====\n");
+  printf("PID=%d - Region=%d - Address=%08X - Size=%d byte\n", proc->pid, reg_index, addr, size);
+#ifdef PAGETBL_DUMP
+  printf("===== SYMBOL TABLE (DATA SEGMENT) =====\n");
+  print_pgtbl(proc, 0, -1); // print max TBL
+#endif
+\end{lstlisting} 
+
+Sau đó, hiển thị mapping giữa số trang ảo (\texttt{Page Number}) và số khung trang vật lý (\texttt{Frame Number}) sau khi cấp phát, giúp ta kiểm tra xem trang đã được ánh xạ đúng chưa và vùng nhớ ảo được cấp phát đã được map tới frame nào trên bộ nhớ vật lý. 
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm liballoc */
+  for (int i = 0; i < PAGING_MAX_PGN; i++)
+  {
+    uint32_t pte = proc->mm->pgd[i];
+    if (PAGING_PAGE_PRESENT(pte))
+    {
+      int fpn = PAGING_PTE_FPN(pte);
+      printf("Page Number: %d -> Frame Number: %d\n", i, fpn);
+    }
+  }
+  printf("================================================================\n");
+#endif
+#ifdef IODUMP
+  printf("======= ENDING %s =========\n", "ALLOC");
+  printf("================================================================\n");
+#endif
+  return val;    
+}
+\end{lstlisting} 
+
+\subsubsubsection{Hàm \texttt{\_\_free}}
+
+Chức năng: Giải phóng vùng nhớ ảo sau khi thực hiện xong các tác vụ cần thiết nhưng không thể thu hồi ngay lập tức frame (khung trang vật lý).
+
+Trước tiên, khóa mutex để đảm bảo đồng bộ trong đa luồng. Dùng \texttt{malloc} để tạo một node vùng nhớ mới, đại diện cho vùng sẽ được giải phóng. Nếu ID của vùng nhớ cần được giải phóng \texttt{rgid} không hợp lệ, trả về lỗi. Lấy địa chỉ bắt đầu \texttt{rg\_start} và kết thúc \texttt{rg\_end} từ bảng \texttt{symrgtbl[rgid]} để biết phạm vi vùng nhớ đã cấp phát. Gọi \texttt{enlist\_vm\_freerg\_list} để thêm vùng vừa được giải phóng vào danh sách vùng nhớ trống hiện tại của tiến trình. Cuối cùng khi kết thúc, mở khóa và trả về \texttt{0} (thành công).
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int __free(struct pcb_t *caller, int vmaid, int rgid)
+{
+  pthread_mutex_lock(&mmvm_lock);
+  struct vm_rg_struct *rgnode = malloc(sizeof(struct vm_rg_struct));
+  if (rgid < 0 || rgid > PAGING_MAX_SYMTBL_SZ)
+  {
+    pthread_mutex_unlock(&mmvm_lock);
+    return -1;
+  }
+
+  rgnode->rg_start = caller->mm->symrgtbl[rgid].rg_start;
+  rgnode->rg_end = caller->mm->symrgtbl[rgid].rg_end;
+  enlist_vm_freerg_list(caller->mm, rgnode);
+
+  pthread_mutex_unlock(&mmvm_lock);
+  return 0;
+}  
+\end{lstlisting} 
+
+\subsubsubsection{Hàm \texttt{libfree}}
+
+Chức năng: Là một wrapper nhằm gọi hàm \texttt{\_\_free} để giải phóng vùng nhớ thực sự và in ra thông tin cần Debug hoặc kiểm thử.
+
+Trước tiên, khởi tạo biến \texttt{val} lưu trữ trạng thái thành công hoặc lỗi sau khi gọi hàm \texttt{\_\_free}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int libfree(struct pcb_t *proc, uint32_t reg_index)
+{
+  int val = __free(proc, 0, reg_index);
+...
+}
+\end{lstlisting}
+
+Nếu kết quả hiển thị mong muốn hiện ra thông tin của bộ nhớ vật lý sau khi giải phóng và để kiểm thử Output, tiến hành in ra các thông tin cần thiết của bảng trang thông qua cờ hiệu \texttt{PAGETBL\_DUMP}, thông tin bộ nhớ vật lý sau khi giải phóng thành công thông qua cờ hiệu \texttt{MMDBG}, thông tin bộ nhớ ảo thông qua cờ hiệu \texttt{VMDBG} và thông tin tác vụ của process thông qua cờ hiệu \texttt{IODUMP}. Các cờ hiệu này được kích hoạt nếu được định nghĩa trong file \texttt{os-cfg.h}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong os-cfg.h */
+#define MMDBG          // Print Memory Management Debug
+#define VMDBG          // Print Virtual Memory Debug
+#define IODUMP 1       // Print I/O Dump
+#define PAGETBL_DUMP 1 // Print Page Table Dump
+\end{lstlisting} 
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm libfree */
+#ifdef IODUMP
+  printf("===== PROCESS'S INSTRUCTION =====\n");
+  printf("Now doing %s\n", "FREE");
+  printf("================================================================\n");
+#endif
+#ifdef VMDBG
+  struct vm_area_struct *vma = get_vma_by_num(proc->mm, 0);
+  print_mem_status(proc, vma);
+#endif
+#ifdef MMDBG
+  printf("===== PHYSICAL MEMORY AFTER DEALLOCATION =====\n");
+  printf("PID=%d - Region=%d\n", proc->pid, reg_index);
+#ifdef PAGETBL_DUMP
+  printf("===== SYMBOL TABLE (DATA SEGMENT) =====\n");
+  print_pgtbl(proc, 0, -1);
+#endif
+\end{lstlisting} 
+
+Sau đó, hiển thị mapping giữa số trang ảo (\texttt{Page Number}) và số khung trang vật lý (\texttt{Frame Number}). Bởi vì trong tầm vực lý thuyết của bài tập lớn chỉ đang hiện thực cơ chế giải phóng frame (free frame) chứ không loại bỏ hẳn frame (clear frame), nên sau khi free thì mapping giữa số trang ảo và số trang vật lý vẫn không thay đổi. Cái thay đổi là danh sách vùng nhớ trống (\texttt{vm\_freerg\_list}) được cập nhật qua hàm \texttt{enlist\_vm\_freerg\_list}. 
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm libfree */
+for (int i = 0; i < PAGING_MAX_PGN; i++)
+  {
+    uint32_t pte = proc->mm->pgd[i];
+    if (PAGING_PAGE_PRESENT(pte))
+    {
+      int fpn = PAGING_PTE_FPN(pte);
+      printf("Page Number: %d -> Frame Number: %d\n", i, fpn);
+    }
+  }
+  printf("================================================================\n");
+#endif
+  return val;
+}  
+\end{lstlisting} 
+
+\subsubsubsection{Hàm \texttt{find\_victim\_page}}
+
+Chức năng: Hiện thực thuật toán tìm trang để thay thế khi BIT PRESENT (hiện hữu) không bật (\texttt{BIT 31 = 0}) theo cơ chế FIFO (First In First Out), tức là tìm trang được thêm vào đầu tiên trong danh sách.
+
+Trước tiên, lấy danh sách các trang (\texttt{pg}) sử dụng theo thuật toán thay thế trang FIFO, với struct \texttt{pgn\_t} gồm số trang (\texttt{pgn}) và con trỏ đến trang tiếp theo (\texttt{pgn\_t *pg\_next}). Nếu danh sách không tồn tại (\texttt{NULL}), trả về lỗi \texttt{-1}. 
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int find_victim_page(struct mm_struct *mm, int *retpgn)
+{
+  struct pgn_t *pg = mm->fifo_pgn;
+
+  /* TODO: Implement the theorical mechanism to find the victim page */
+  // FIFO: First In First Out
+  if (pg == NULL)
+  {
+    return -1;
+  }
+...
+}
+\end{lstlisting} 
+
+Khi danh sách trang có tồn tại, xét trường hợp trong danh sách chỉ có một trang duy nhất, lưu lại số trang trả về vào \texttt{retpgn} và giải phóng trang đó, gán lại danh sách thành rỗng (\texttt{NULL}) để tránh địa chỉ rác sau khi giải phóng.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+  // Special case: only one node in list
+  if (pg->pg_next == NULL)
+  {
+    *retpgn = pg->pgn;
+    free(pg);
+    mm->fifo_pgn = NULL;
+    return 0;
+  }
+\end{lstlisting} 
+
+Tiếp đến, với các trường hợp khi trong danh sách có hơn một trang, vì \texttt{fifo\_png} sẽ được khởi tạo thông qua hàm \texttt{enlist\_pgn\_node} trong file \texttt{mm.c}. Cơ chế thực hiện của hàm đó là thêm những trang mới vào đầu danh sách liên kết, vì thế trong thuật toán tìm kiếm trang này sẽ dò tìm đến các trang cuối cùng (tức là các trang được thêm vào đầu tiên) để đảm bảo FIFO. Khi đi đến trang áp cuối, lưu lại số trang tiếp theo để trả về vào \texttt{retpgn} và giải phóng trang đó (\texttt{pg->pg\_next}), gán lại trang cuối là rỗng (\texttt{NULL}) để tránh địa chỉ rác sau khi giải phóng. Cuối cùng trả về \texttt{0} để kết thúc.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+  // Normal case: more than one node in list
+  while (pg->pg_next->pg_next != NULL)
+  {
+    pg = pg->pg_next;
+  }
+
+  // pg now points to second last, remove last
+  *retpgn = pg->pg_next->pgn;
+  free(pg->pg_next);
+  pg->pg_next = NULL;
+
+  return 0;
+}
+\end{lstlisting} 
+
+\subsubsubsection{Hàm \texttt{pg\_getpage}}
+
+Chức năng: Lấy một trang trong RAM, nếu trang đó không tồn tại thì tiến hành swap (hoán đổi) trang.
+
+Đầu tiên, lưu lại entry của trang (\texttt{pte}) chứa số frame (kiểu dữ liệu số nguyên không dấu có độ rộng 32-bit \texttt{uint32\_t}) cần truy cập từ bảng trang ở số trang được truyền vào (\texttt{pgd[pgn]} với \texttt{pgd} là Page Table Directory).
+\pagebreak
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int pg_getpage(struct mm_struct *mm, int pgn, int *fpn, struct pcb_t *caller)
+{
+  uint32_t pte = mm->pgd[pgn];
+...
+}
+\end{lstlisting} 
+
+Trường hợp entry của trang đó không có BIT PRESENT (hiện hữu) không bật (có thể đang ở SWAP), tiến hành thực hiện thuật toán SWAP OUT và SWAP IN bằng lời gọi SYSCALL 17. Trước tiên, chọn trang victim (tức là trang thay thế được lấy ra theo cơ chế FIFO) bằng cách gọi hàm \texttt{find\_victim\_page}. Đồng thời, cần lưu lại frame hiện tại trong SWAP chứa dữ liệu ta cần truy cập vào hoặc cần lấy lại bằng SWAP IN (\texttt{tgtfpn}). Sau đó, lấy ra một khung vật lý đang trống trong SWAP để chứa trang victim vừa lấy ra được bằng hàm \texttt{MEMPHY\_get\_freefp} được khai báo ở file \texttt{mm-memphy.c}.
+
+Ngoài ra, số trang của trang bị chọn làm trang victim để bị SWAP OUT (\texttt{vicpgn}), frame đang trống trong SWAP cần chứa dữ liệu của trang victim (\texttt{swpfpn}) và frame trong RAM chứa dữ liệu của trang victim đang chiếm (\texttt{vicfpn}) cũng được khởi tạo.
+
+% Khác biệt giữa vicfpn và swpfpn:
+% vicfpn chứa dữ liệu của victim trong RAM
+% swpfpn chứa dữ liệu của victim trong SWAP
+% Vì RAM đang đầy, nên cần swap từ RAM sang SWAP
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm pg_getpage */
+  if (!PAGING_PAGE_PRESENT(pte))
+  { /* Page is not online, make it actively living */
+    int vicpgn; 
+    int swpfpn; 
+    int vicfpn; 
+    uint32_t vicpte;
+
+    int tgtfpn = PAGING_PTE_SWP(pte); 
+
+    /* TODO: Play with your paging theory here */
+    /* Find victim page */
+    find_victim_page(caller->mm, &vicpgn);
+
+    /* Get free frame in MEMSWP */
+    MEMPHY_get_freefp(caller->active_mswp, &swpfpn);
+...
+}
+\end{lstlisting} 
+
+Sau khi lấy được một trang victim trong RAM, ta lấy từ bảng trang tại chỉ số của trang victim đó để trích ra frame trong RAM của trang victim vào \texttt{vicfpn}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm pg_getpage */
+    /* TODO: Implement swap frame from MEMRAM to MEMSWP and vice versa*/
+    vicpte = mm->pgd[vicpgn];
+    vicfpn = PAGING_PTE_FPN(vicpte);
+\end{lstlisting}
+
+Tiến hành thực hiện SWAP OUT để đưa dữ liệu của trang victim từ RAM sang SWAP qua lời gọi SYSCALL 17 \texttt{sys\_memmap}, truyền tham số bằng các thanh ghi (\texttt{regs.a1, regs.a2, regs.a3}) tương ứng: 
+
+\begin{itemize}
+    \item \texttt{regs.a1} truyền vào cờ hiệu \texttt{SYSMEM\_SWP\_OP} để hoán đổi trang bộ nhớ với hàm \texttt{\_\_mm\_swap\_page()} trong file \texttt{mm-vm.c}.
+    \item \texttt{regs.a2} truyền vào frame trong RAM chứa dữ liệu của trang victim (\texttt{vicfpn}).
+    \item \texttt{regs.a3} truyền vào frame đang trống trong SWAP cần chứa dữ liệu của trang victim (\texttt{swpfpn}).
+\end{itemize}
+
+Nếu SWAP OUT không thành công, đánh dấu cờ (\texttt{flags}) của thanh ghi và trả về lỗi là \texttt{-1}, ngược lại đánh dấu cờ là \texttt{0} và tiếp tục.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm pg_getpage */
+     /* TODO copy victim frame to swap
+     * SWP(vicfpn <--> swpfpn)
+     * SYSCALL 17 sys_memmap
+     * with operation SYSMEM_SWP_OP
+     */
+    struct sc_regs regs;
+    regs.a1 = SYSMEM_SWP_OP;
+    regs.a2 = vicfpn;
+    regs.a3 = swpfpn;
+    /* SYSCALL 17 sys_memmap */
+    regs.orig_ax = 17;
+
+    if (syscall(caller, regs.orig_ax, &regs) != 0)
+    {
+      regs.flags = -1; // failed
+      return -1;
+    }
+
+    regs.flags = 0; // successful
+...
+}
+\end{lstlisting} 
+
+Sau đó, vì bây giờ khung vật lý \texttt{vicfpn} trong RAM đã trống, nên ta dùng lại nó để lấy dữ liệu trang thật sự đang cần từ SWAP. Tiến hành thực hiện SWAP IN để đưa dữ liệu của trang victim từ SWAP vào frame ở RAM vừa giải phóng qua lời gọi SYSCALL 17 \texttt{sys\_memmap}, truyền tham số bằng các thanh ghi (\texttt{regs.a1, regs.a2, regs.a3}) tương ứng: 
+
+\begin{itemize}
+    \item \texttt{regs.a1} truyền vào cờ hiệu \texttt{SYSMEM\_SWP\_OP} để hoán đổi trang bộ nhớ với hàm \texttt{\_\_mm\_swap\_page()} trong file \texttt{mm-vm.c}.
+    \item \texttt{regs.a2} truyền vào frame trong SWAP đang chứa dữ liệu ta cần truy cập vào hoặc cần lấy lại (\texttt{tgtfpn}) mà ta đã lưu trữ thông qua \texttt{pte}.
+    \item \texttt{regs.a3} truyền vào frame vừa trống trong RAM để chứa dữ liệu thực sự của trang victim ta cần (\texttt{vicfpn}).
+\end{itemize}
+
+Nếu SWAP IN không thành công, đánh dấu cờ (\texttt{flags}) của thanh ghi và trả về lỗi là \texttt{-1}, ngược lại đánh dấu cờ là \texttt{0} và tiếp tục.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm pg_getpage */
+    /* TODO copy target frame form swap to mem
+     * SWP(tgtfpn <--> vicfpn)
+     * SYSCALL 17 sys_memmap
+     * with operation SYSMEM_SWP_OP
+     */
+
+    /* TODO copy target frame form swap to mem */
+    regs.a2 = tgtfpn; 
+    regs.a3 = vicfpn; 
+
+    /* SYSCALL 17 sys_memmap */
+    if (syscall(caller, regs.orig_ax, &regs) != 0)
+    {
+      regs.flags = -1; // failed
+      return -1;
+    }
+
+    regs.flags = 0; // successful
+...
+}
+\end{lstlisting}
+
+Đến bước cuối, cần cập nhật lại bảng trang của trang victim sau khi SWAP OUT và SWAP IN. Thông tin cần cập nhật bao gồm: \texttt{swptyp} -- ID vùng SWAP (để biết frame đó thuộc vùng nào nếu hệ thống có nhiều phân vùng SWAP), \texttt{swpfpn} -- frame trong SWAP của trang victim và BIT PRESENT được bật. Sau đó, thêm số trang cần truy cập (\texttt{pgn} -- Page Number vừa được SWAP IN) vào đầu danh sách FIFO. Sau khi mọi thứ đã cập nhật xong, lưu lại frame từ PTE mới của số trang cần truy cập (\texttt{pgn}), trả về thành công và kết thúc.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm pg_getpage */
+    /* Update page table */
+    uint32_t swptyp = caller->active_mswp_id;
+    pte_set_swap(&vicpte, swptyp, swpfpn);
+    mm->pgd[vicpgn] = vicpte;   // Cập nhật lại PTE của victim vào bảng trang thật
+
+    /* Update its online status of the target page */
+    pte_set_fpn(&pte, vicfpn);   // frame mới trong RAM của page cần truy cập
+    PAGING_PTE_SET_PRESENT(pte); // Đánh dấu present
+    mm->pgd[pgn] = pte;          // Cập nhật lại PTE vào bảng trang thật
+
+    enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
+  }
+
+  *fpn = PAGING_FPN(pte);
+
+  return 0;
+}
+\end{lstlisting}
+
+Vì hàm \texttt{pg\_getpage} này thực hiện nhiều tác vụ có liên quan đến quản lý bộ nhớ ảo và xử lý page fault với các thao tác liên quan đến SWAP IN và SWAP OUT, việc phân tích bằng bảng sẽ giúp làm rõ luồng thực thi, mục đích của từng đoạn mã, cũng như mối quan hệ giữa các thao tác chính.
+
+\begin{center}
+\centering
+\renewcommand{\arraystretch}{1}
+\begin{longtable}{|>{\raggedright\arraybackslash}p{4cm}|>{\raggedright\arraybackslash}p{10cm}|}
+\hline
+\textbf{Luồng thực thi} & \textbf{Mô tả} \\
+\hline 
+1. Kiểm tra PTE & Kiểm tra BIT PRESENT trong PTE của trang cần truy cập (\texttt{pgn}). Nếu không hiện hữu, cần xử lý page fault.\\
+\hline 
+2. Tìm trang victim & Gọi \texttt{find\_victim\_page()} để chọn một trang đang nằm trong RAM cần bị SWAP OUT.\\
+\hline
+3. Xin frame trống trong SWAP & Gọi \texttt{MEMPHY\_get\_freefp()} để lấy một frame trống trong SWAP, nơi sẽ chứa nội dung của victim.\\
+\hline
+4. Swap out victim page	& Dùng SYSCALL 17 (\texttt{SYSMEM\_SWP\_OP}) để copy nội dung từ RAM frame \texttt{vicfpn} sang SWAP frame \texttt{swpfpn}.\\
+\hline
+5. Swap in target page & Dùng SYSCALL 17 (\texttt{SYSMEM\_SWP\_OP}) để copy từ SWAP frame \texttt{tgtfpn} về lại RAM frame \texttt{vicfpn}.\\
+\hline
+6. Cập nhật PTE của victim & Dùng \texttt{pte\_set\_swap()} để đánh dấu victim page đã bị SWAP OUT (present = 0, lưu vị trí swap). Cập nhật vào bảng trang thật \texttt{pgd[vicpgn]}.\\
+\hline
+7. Cập nhật PTE của target page	& Dùng \texttt{pte\_set\_fpn()} và set BIT PRESENT = 1, sau đó ghi lại vào \texttt{pgd[pgn]}.\\
+\hline
+8. Cập nhật FIFO list & Gọi \texttt{enlist\_pgn\_node()} để thêm \texttt{pgn} vào FIFO -- phục vụ cho chính sách thay thế trang sau này.\\
+\hline
+9. Trả về frame vật lý & Gán \texttt{*fpn = PAGING\_FPN(pte)} để caller biết frame vật lý mới chứa dữ liệu của trang cần truy cập \texttt{pgn}.\\
+\hline
+\caption{\label{table2}Tóm tắt luồng thực thi của hàm}
+\end{longtable}
+\end{center}
+
+\subsubsubsection{Hàm \texttt{pg\_getval}}
+
+Chức năng: Truy cập trực tiếp qua bộ nhớ vật lý (Physical Memory) để đọc dữ liệu của trang qua việc gọi hàm thông qua lời gọi SYSCALL 17 \texttt{sys\_memmap} và lưu lại dữ liệu vừa đọc.
+
+Trước tiên, từ địa chỉ \texttt{addr} của trang cần truy cập, ta lấy số trang tương ứng và độ dời \texttt{offst} của địa chỉ đó. Đồng thời khởi tạo một biến để lưu frame của trang sau các bước SWAP OUT và SWAP IN nếu có khi đi qua hàm \texttt{pg\_getpage}. Nếu thất bại, trả về lỗi \texttt{-1}, ngược lại trả về \texttt{0} và tiếp tục.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int pg_getval(struct mm_struct *mm, int addr, BYTE *data, struct pcb_t *caller)
+{
+  int pgn = PAGING_PGN(addr);
+  int offst = PAGING_OFFST(addr);
+  int fpn;
+
+  /* Get the page to MEMRAM, swap from MEMSWAP if needed */
+  if (pg_getpage(mm, pgn, &fpn, caller) != 0)
+  {
+    return -1; /* invalid page access */
+  }
+...
+}
+\end{lstlisting}
+
+Sau đó, tiến hành đọc dữ liệu trang thông qua lời gọi SYSCALL 17 \texttt{sys\_memmap}, truyền tham số bằng các thanh ghi (\texttt{regs.a1, regs.a2, regs.a3}) tương ứng: 
+
+\begin{itemize}
+    \item \texttt{regs.a1} truyền vào cờ hiệu \texttt{SYSMEM\_IO\_READ} để đọc bộ nhớ vật lý với hàm \texttt{MEMPHY\_read()} trong file \texttt{mm-memphy.c}.
+    \item \texttt{regs.a2} truyền vào địa chỉ vật lý của trang dựa trên frame và offset (\texttt{phyaddr}).
+    \item \texttt{regs.a3} sẽ lưu lại dữ liệu vừa đọc được nếu thành công.
+\end{itemize}
+
+Nếu đọc dữ liệu thành công, ta lấy thông tin từ \texttt{regs.a3} và lưu vào biến \texttt{data}. Sau đó, đánh dấu cờ (\texttt{flags}) của thanh ghi và trả về thành công là \texttt{0}, ngược lại đánh dấu cờ là \texttt{-1}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm pg_getval */
+  /* TODO
+   *  MEMPHY_read(caller->mram, phyaddr, data);
+   *  MEMPHY READ
+   *  SYSCALL 17 sys_memmap with SYSMEM_IO_READ
+   */
+  int phyaddr = PAGING_PHYADDR(fpn, offst);
+
+  struct sc_regs regs;
+  regs.a1 = SYSMEM_IO_READ;
+  regs.a2 = phyaddr;
+
+  /* SYSCALL 17 sys_memmap */
+  regs.orig_ax = 17;
+
+  if (syscall(caller, regs.orig_ax, &regs) != 0)
+  {
+    regs.flags = -1;
+    return -1; // read failed
+  }
+
+  // Update data
+  *data = (BYTE)(regs.a3);
+  regs.flags = 0; // succesful
+
+  return 0;
+}
+\end{lstlisting}
+
+\subsubsubsection{Hàm \texttt{libread}}
+
+Chức năng: Là một wrapper nhằm gọi hàm \texttt{\_\_read} để đọc dữ liệu thực sự và in ra thông tin cần Debug hoặc kiểm thử.
+
+Trước tiên, khởi tạo biến \texttt{data} lưu trữ dữ liệu sẽ đọc, biến \texttt{val} lưu trữ trạng thái thành công hoặc lỗi sau khi gọi hàm \texttt{\_\_read}. Biến \texttt{destination} chứa bản sao dữ liệu của \texttt{data} vừa đọc được. 
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int libread(
+    struct pcb_t *proc, // Process executing the instruction
+    uint32_t source,    // Index of source register
+    uint32_t offset,    // Source address = [source] + [offset]
+    uint32_t *destination)
+{
+  BYTE data;
+  int val = __read(proc, 0, source, offset, &data);
+  *destination = (uint32_t)data;
+...
+}
+\end{lstlisting} 
+
+Nếu kết quả hiển thị mong muốn hiện ra thông tin của bộ nhớ vật lý sau khi đọc và để kiểm thử Output, tiến hành in ra các thông tin cần thiết của bảng trang thông qua cờ hiệu \texttt{PAGETBL\_DUMP}, thông tin bộ nhớ vật lý sau khi đọc thành công thông qua cờ hiệu \texttt{MMDBG}, thông tin bộ nhớ ảo thông qua cờ hiệu \texttt{VMDBG} và thông tin tác vụ của process thông qua cờ hiệu \texttt{IODUMP}. Các cờ hiệu này được kích hoạt nếu được định nghĩa trong file \texttt{os-cfg.h}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong os-cfg.h */
+#define MMDBG          // Print Memory Management Debug
+#define VMDBG          // Print Virtual Memory Debug
+#define IODUMP 1       // Print I/O Dump
+#define PAGETBL_DUMP 1 // Print Page Table Dump
+\end{lstlisting} 
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm libread */ 
+#ifdef IODUMP
+  printf("===== PROCESS'S INSTRUCTION =====\n");
+  printf("Now doing %s\n", "READ");
+  printf("================================================================\n");
+#endif
+
+#ifdef VMDBG
+  struct vm_area_struct *vma = get_vma_by_num(proc->mm, 0);
+  print_mem_status(proc, vma);
+#endif
+
+#ifdef MMDBG
+  printf("================================================================\n");
+  printf("===== PHYSICAL MEMORY AFTER READING =====\n");
+  printf("read region=%d offset=%d value=%d\n", source, offset, data);
+#ifdef PAGETBL_DUMP
+  printf("===== SYMBOL TABLE (DATA SEGMENT) =====\n");
+  print_pgtbl(proc, 0, -1); // print max TBL
+#endif
+\end{lstlisting}
+
+Sau đó, hiển thị mapping giữa số trang ảo (\texttt{Page Number}) và số khung trang vật lý (\texttt{Frame Number}) hiện tại, giúp ta kiểm tra xem trang đã được ánh xạ đúng chưa và vùng nhớ ảo được cấp phát đã được map tới frame nào trên bộ nhớ vật lý. Đồng thời, in ra giá trị dữ liệu vừa đọc được thông qua hàm \texttt{MEMPHY\_dump} trong file \texttt{mm-memphy.c}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm libread */
+  for (int i = 0; i < PAGING_MAX_PGN; i++)
+  {
+    uint32_t pte = proc->mm->pgd[i];
+    if (PAGING_PAGE_PRESENT(pte))
+    {
+      int fpn = PAGING_PTE_FPN(pte);
+      printf("Page Number: %d -> Frame Number: %d\n", i, fpn);
+    }
+  }
+  printf("================================================================\n");
+  MEMPHY_dump(proc->mram);
+#endif
+#ifdef IODUMP
+  printf("======= ENDING %s =========\n", "READ");
+  printf("================================================================\n");
+#endif
+  return val;
+}   
+\end{lstlisting} 
+
+\subsubsubsection{Hàm \texttt{pg\_setval}}
+
+Chức năng: Truy cập trực tiếp qua bộ nhớ vật lý (Physical Memory) để ghi dữ liệu của trang qua việc lời gọi SYSCALL 17 \texttt{sys\_memmap}.
+
+Trước tiên, từ địa chỉ \texttt{addr} của trang cần truy cập, ta lấy số trang tương ứng và độ dời \texttt{offst} của địa chỉ đó. Đồng thời khởi tạo một biến để lưu frame của trang sau các bước SWAP OUT và SWAP IN nếu có khi đi qua hàm \texttt{pg\_getpage}. Nếu thất bại, trả về lỗi \texttt{-1}, ngược lại trả về \texttt{0} và tiếp tục.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int pg_setval(struct mm_struct *mm, int addr, BYTE value, struct pcb_t *caller)
+{
+  int pgn = PAGING_PGN(addr);
+  int offst = PAGING_OFFST(addr);
+  int fpn;
+
+  /* Get the page to MEMRAM, swap from MEMSWAP if needed */
+  if (pg_getpage(mm, pgn, &fpn, caller) != 0)
+  {
+    return -1;
+  }
+...
+}
+\end{lstlisting}
+
+Sau đó, tiến hành ghi dữ liệu trang thông qua lời gọi SYSCALL 17 \texttt{sys\_memmap}, truyền tham số bằng các thanh ghi (\texttt{regs.a1, regs.a2, regs.a3}) tương ứng: 
+
+\begin{itemize}
+    \item \texttt{regs.a1} truyền vào cờ hiệu \texttt{SYSMEM\_IO\_READ} để đọc bộ nhớ vật lý với hàm \texttt{MEMPHY\_read()} trong file \texttt{mm-memphy.c}.
+    \item \texttt{regs.a2} truyền vào địa chỉ vật lý của trang dựa trên frame và offset (\texttt{phyaddr}).
+    \item \texttt{regs.a3} truyền vào dữ liệu cần ghi (\texttt{value}).
+\end{itemize}
+
+Nếu ghi dữ liệu thành công, đánh dấu cờ (\texttt{flags}) của thanh ghi và trả về thành công là \texttt{0}, ngược lại đánh dấu cờ là \texttt{-1}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm pg_setval */
+  /* TODO
+   *  MEMPHY_write(caller->mram, phyaddr, value);
+   *  MEMPHY WRITE
+   *  SYSCALL 17 sys_memmap with SYSMEM_IO_WRITE
+   */
+  int phyaddr = PAGING_PHYADDR(fpn, offst);
+
+  struct sc_regs regs;
+  regs.a1 = SYSMEM_IO_WRITE;
+  regs.a2 = phyaddr;
+  regs.a3 = value;
+
+  /* SYSCALL 17 sys_memmap */
+  regs.orig_ax = 17;
+  if (syscall(caller, regs.orig_ax, &regs) != 0)
+  {
+    regs.flags = -1;
+    return -1; // failed
+  }
+
+  regs.flags = 0; // succesful
+
+  return 0;
+}
+\end{lstlisting}
+
+\subsubsubsection{Hàm \texttt{libwrite}}
+
+Chức năng: Là một wrapper nhằm gọi hàm \texttt{\_\_write} để đọc dữ liệu thực sự và in ra thông tin cần Debug hoặc kiểm thử.
+
+Trước tiên, khởi tạo biến \texttt{result} lưu trữ trạng thái thành công hoặc lỗi sau khi gọi hàm \texttt{\_\_write}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+int libwrite(
+    struct pcb_t *proc,   // Process executing the instruction
+    BYTE data,            // Data to be wrttien into memory
+    uint32_t destination, // Index of destination register
+    uint32_t offset)
+{  
+  int result = __write(proc, 0, destination, offset, data);
+...
+}
+\end{lstlisting} 
+
+Nếu kết quả hiển thị mong muốn hiện ra thông tin của bộ nhớ vật lý sau khi ghi và để kiểm thử Output, tiến hành in ra các thông tin cần thiết của bảng trang thông qua cờ hiệu \texttt{PAGETBL\_DUMP}, thông tin bộ nhớ vật lý sau khi ghi thành công thông qua cờ hiệu \texttt{MMDBG}, thông tin bộ nhớ ảo thông qua cờ hiệu \texttt{VMDBG} và thông tin tác vụ của process thông qua cờ hiệu \texttt{IODUMP}. Các cờ hiệu này được kích hoạt nếu được định nghĩa trong file \texttt{os-cfg.h}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong os-cfg.h */
+#define MMDBG          // Print Memory Management Debug
+#define VMDBG          // Print Virtual Memory Debug
+#define IODUMP 1       // Print I/O Dump
+#define PAGETBL_DUMP 1 // Print Page Table Dump
+\end{lstlisting} 
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm libwrite */ 
+#ifdef IODUMP
+  printf("===== PROCESS'S INSTRUCTION =====\n");
+  printf("Now doing %s\n", "WRITE");
+  printf("================================================================\n");
+#endif
+#ifdef VMDBG
+  struct vm_area_struct *vma = get_vma_by_num(proc->mm, 0);
+  print_mem_status(proc, vma);
+#endif
+#ifdef MMDBG
+  printf("================================================================\n");
+  printf("===== PHYSICAL MEMORY AFTER WRITING =====\n");
+  printf("write region=%d offset=%d value=%d\n", destination, offset, data);
+#ifdef PAGETBL_DUMP
+  printf("===== SYMBOL TABLE (DATA SEGMENT) =====\n");
+  print_pgtbl(proc, 0, -1); // print max TBL
+#endif
+\end{lstlisting}
+
+Sau đó, hiển thị mapping giữa số trang ảo (\texttt{Page Number}) và số khung trang vật lý (\texttt{Frame Number}) hiện tại, giúp ta kiểm tra xem trang đã được ánh xạ đúng chưa và vùng nhớ ảo được cấp phát đã được map tới frame nào trên bộ nhớ vật lý. Đồng thời, in ra giá trị dữ liệu vừa đọc được thông qua hàm \texttt{MEMPHY\_dump} trong file \texttt{mm-memphy.c}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+/* Trong hàm libwrite */
+  for (int i = 0; i < PAGING_MAX_PGN; i++)
+  {
+    uint32_t pte = proc->mm->pgd[i];
+    if (PAGING_PAGE_PRESENT(pte))
+    {
+      int fpn = PAGING_PTE_FPN(pte);
+      printf("Page Number: %d -> Frame Number: %d\n", i, fpn);
+    }
+  }
+  printf("================================================================\n");
+  MEMPHY_dump(proc->mram);
+#endif
+#ifdef IODUMP
+  printf("======= ENDING %s =========\n", "WRITE");
+  printf("================================================================\n");
+#endif
+  return result;
+}   
+\end{lstlisting} 
+
+
+\subsubsection{\texttt{mm-memphy.c}}
+
+\textbf{Hàm \texttt{MEMPHY\_dump}}
+
+ Chức năng: In ra nội dung bộ nhớ vật lý (physical memory) của hệ thống quản lý bộ nhớ theo phân trang (Paging). Hàm trả về \texttt{0} nếu thành công, \texttt{-1} nếu thất bại (bộ nhớ chưa được khởi tạo).
+ 
+Trước tiên, kiểm tra xem \texttt{mp} có hợp lệ không. Nếu chưa được khởi tạo (\texttt{NULL}), ghi lỗi và trả về \texttt{-1}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+    int MEMPHY_dump(struct memphy_struct *mp){
+       /*TODO dump memphy contnt mp->storage
+        *     for tracing the memory content*/
+       if (mp == NULL || mp->storage == NULL){
+          perror("memphy is not initialized.\n");
+          return -1;
+       }
+\end{lstlisting} 
+
+Vòng lặp duyệt toàn bộ vùng bộ nhớ vật lý:
+
+\begin{itemize}
+    \item \texttt{mp->storage[i]}: lấy giá trị tại địa chỉ vật lý \texttt{i}.
+    \item Chỉ in ra nếu \texttt{value} khác \texttt{0} (bỏ qua byte có giá trị \texttt{0} để tránh in quá nhiều dòng dư thừa).
+    \item \texttt{BYTE \%08X}: in địa chỉ theo dạng cơ số 16 với 8 chữ số, \texttt{value} là giá trị tại địa chỉ đó.
+\end{itemize}
+\begin{lstlisting}[style=Cstyle,language=C]       
+       printf("===== PHYSICAL MEMORY DUMP =====\n");
+       for (int i = 0; i < mp->maxsz; i++){
+          BYTE value = mp->storage[i];
+          if (value != 0)
+             printf("BYTE %08X: %d\n", i, value);
+       }
+       printf("===== PHYSICAL MEMORY END-DUMP =====\n");
+       return 0;
+    }
+\end{lstlisting} 
+
+%%%%% Như sửa %%%%%%%
+
+Tại sao phải bỏ qua giá trị \texttt{0}? Vì khi khởi tạo bộ nhớ vật lý ở hàm \texttt{init\_memphy()}, toàn bộ vùng nhớ \texttt{BYTE* storage} của mỗi memphy được đặt giá trị ban đầu là \texttt{0} bằng \texttt{memset()} nên phần lớn byte còn lại vẫn là \texttt{0}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+    /*
+     *  Init MEMPHY struct
+     */
+    int init_memphy(struct memphy_struct *mp, int max_size, int randomflg)
+    {
+       mp->storage = (BYTE *)malloc(max_size * sizeof(BYTE));
+       mp->maxsz = max_size;
+       memset(mp->storage, 0, max_size * sizeof(BYTE));
+    
+       MEMPHY_format(mp, PAGING_PAGESZ);
+    
+       mp->rdmflg = (randomflg != 0) ? 1 : 0;
+    
+       if (!mp->rdmflg) /* Not Ramdom acess device, then it serial device*/
+          mp->cursor = 0;
+    
+       return 0;
+    }
+\end{lstlisting} 
+%%%%%%%%%%%%%%%%%
+
+\subsubsection{\texttt{mm-vm.c}}
+
+\subsubsubsection{Con trỏ hàm \texttt{*get\_vm\_area\_node\_at\_brk}}
+
+Chức năng: Tạo một vùng nhớ mới (kiểu \texttt{vm\_rg\_struct}) bắt đầu từ \texttt{sbrk} (điểm mở rộng tiếp theo) của vùng nhớ ảo \texttt{vm\_area\_struct}, dành cho việc cấp phát động.
+
+
+Cấp phát một \texttt{struct vm\_rg\_struct} mới, vì dùng \texttt{sizeof()} để xác định số lượng byte nên ta cấp phát cho nó với kích thước của struct là 24 bytes nhằm lưu thông tin vùng cần cấp phát, đồng thời kiểm tra nếu \texttt{malloc} thất bại (hết RAM heap), trả về \texttt{0 (NULL)} để báo lỗi.
+
+        \begin{lstlisting}[style=Cstyle,language=C]
+    struct vm_rg_struct *get_vm_area_node_at_brk(struct pcb_t *caller, int vmaid, int size, int alignedsz) 
+    {
+        struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
+        if (!newrg)
+            return 0;\end{lstlisting}
+
+Lấy vùng nhớ ảo hiện tại (\texttt{vmaid}). Đây là nơi \texttt{sbrk} sẽ chỉ đến để biết vùng cấp phát mới sẽ bắt đầu từ đâu. Đồng thời kiểm tra nếu không tìm thấy \texttt{vm\_area}, giải phóng vùng mới tạo và trả về lỗi.
+
+        \begin{lstlisting}[style=Cstyle,language=C]
+        /* TODO retrive current vma to obtain newrg, current comment out due to compiler redundant warning*/
+        struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);
+        if (!cur_vma)
+        {
+            free(newrg);
+            return 0;
+        }\end{lstlisting}
+
+Thiết lập vùng mới bắt đầu từ \texttt{sbrk}.
+
+        \begin{lstlisting}[style=Cstyle,language=C]
+        /* TODO: update the newrg boundary */
+        newrg->rg_start = cur_vma->sbrk;
+        newrg->rg_end = newrg->rg_start + alignedsz;
+        return newrg;
+    }\end{lstlisting} 
+
+Ở đây, nhóm cộng thêm \texttt{alignedsz} cho địa chỉ kết thúc của vùng mới mà không phải \texttt{size} bởi vì \texttt{alignedsz} là kích thước đã được làm tròn lên đến số nguyên bội của kích thước trang (\texttt{PAGING\_PAGESZ}) (như 4096 bytes).
+        
+  
+\subsubsubsection{Hàm \texttt{validate\_overlap\_vm\_area}}
+
+Chức năng: Kiểm tra xem vùng nhớ ảo mới \texttt{[vmastart, vmaend]} có bị trùng lặp (overlap) với bất kỳ vùng nhớ ảo nào đã tồn tại hay không. 
+
+
+Hàm trả về \texttt{0} nếu không bị trùng lặp nên an toàn để cấp phát, trả về \texttt{-1} nếu có trùng lặp, tiếp đó sẽ không cấp phát vùng nhớ (\texttt{vm\_area\_struct}).
+
+
+Khởi tạo khóa để đảm bảo an toàn khi truy cập các vùng nhớ \texttt{mmap} trong đa luồng và lấy vùng nhớ đầu tiên của tiến trình (\texttt{caller->mm->mmap}).
+
+\begin{lstlisting}[style=Cstyle,language=C]
+    int validate_overlap_vm_area(struct pcb_t *caller, int vmaid, int vmastart, int vmaend)
+    {
+      pthread_mutex_lock(&mem_lock);
+      /* TODO validate the planned memory area is not overlapped */
+      struct vm_area_struct *vma = caller->mm->mmap;
+\end{lstlisting} 
+
+Duyệt qua vòng lặp các vùng:
+
+\begin{itemize}
+    \item Bỏ qua chính vùng \texttt{vmaid} đang cấp phát (nếu trùng ID) và kiểm tra thêm để tránh vùng rỗng (\texttt{start = end}).
+    \item Kiểm tra trùng lặp vùng mới với vùng hiện tại (kiểm tra theo 2 điều kiện: bắt chéo và biên). Nếu trùng hàm sẽ trả về \texttt{-1}. Nếu không tiếp tục kiểm tra vùng tiếp theo.
+    \item Nếu không có vùng trùng lặp thì hàm sẽ trả về \texttt{0}.
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+      while (vma)
+      {
+        if ((vma->vm_id != vmaid) && (vma->vm_start != vma->vm_end)){
+            // Trường hợp 1: Bắt chéo
+          if ((int)((vmaend - 1 - vma->vm_start) * (vma->vm_end - 1 - vmastart)) >= 0){
+            pthread_mutex_unlock(&mem_lock);
+            return -1;
+          }
+            // Trường hợp 2: Biên 
+          if ((int)((vmastart - vma->vm_start) * (vma->vm_end - vmaend)) >= 0){
+            pthread_mutex_unlock(&mem_lock);
+            return -1;
+          }
+        }
+        vma = vma->vm_next;
+      }
+      pthread_mutex_unlock(&mem_lock);
+      return 0;
+    }
+\end{lstlisting} 
+    
+\subsubsubsection{Hàm \texttt{inc\_vma\_limit}}
+
+Chức năng: Tăng giới hạn vùng nhớ ảo (VMA) của một tiến trình để dành chỗ cho vùng dữ liệu mới. Đồng thời, cấp phát vùng RAM vật lý tương ứng và ánh xạ (map) nó vào vùng ảo.
+
+
+Khi tăng giới hạn vùng nhớ ảo thành công thì hàm trả về giá trị \texttt{0}, không thành công sẽ trả về \texttt{-1}. 
+
+
+Cấp phát vùng mới để ánh xạ RAM và tính số lượng trang (\texttt{incnumpage}) cần cấp phát thêm.
+
+
+        \begin{lstlisting}[style=Cstyle,language=C]
+    int inc_vma_limit(struct pcb_t *caller, int vmaid, int inc_sz)
+    {
+      struct vm_rg_struct *newrg = malloc(sizeof(struct vm_rg_struct));
+      int inc_amt = PAGING_PAGE_ALIGNSZ(inc_sz);
+      int incnumpage = inc_amt / PAGING_PAGESZ;\end{lstlisting}
+
+Lấy vùng nhớ hiện tại và xác định vùng nhớ mới từ \texttt{sbrk} (dùng \texttt{get\_vm\_area\_node\_at\_brk}).
+
+        \begin{lstlisting}[style=Cstyle,language=C]
+      struct vm_rg_struct *area = get_vm_area_node_at_brk(caller, vmaid, inc_sz, inc_amt);
+      struct vm_area_struct *cur_vma = get_vma_by_num(caller->mm, vmaid);\end{lstlisting}
+
+Lưu lại giá trị cũ của vm\_end để dùng làm điểm bắt đầu ánh xạ RAM (mapstart).
+
+        \begin{lstlisting}[style=Cstyle,language=C]
+      int old_end = cur_vma->vm_end;\end{lstlisting}
+
+Kiểm tra vùng nhớ mới (\texttt{vm\_area\_struct}) có bị trùng lặp các vùng nhớ cũ khác không. Nếu trùng thì không mở rộng và trả hàm về giá trị \texttt{-1}, còn nếu không thì sẽ cấp phát vùng nhớ mới.
+
+        \begin{lstlisting}[style=Cstyle,language=C]
+      /*Validate overlap of obtained region */
+      if (validate_overlap_vm_area(caller, vmaid, area->rg_start, area->rg_end) < 0)
+        return -1; /*Overlap and failed allocation */\end{lstlisting}
+
+Cập nhật \texttt{sbrk} (vị trí cấp phát tiếp theo) và \texttt{vm\_end} (giới hạn vùng ảo mới).
+
+        \begin{lstlisting}[style=Cstyle,language=C]
+      /* TODO: Obtain the new vm area based on vmaid */
+      if (cur_vma != NULL && area != NULL){
+        cur_vma->sbrk = area->rg_end;
+        cur_vma->vm_end = area->rg_end;
+      } 
+      else
+        return -1;\end{lstlisting}
+
+Ánh xạ vùng ảo mới vừa mở rộng vào bộ nhớ vật lý. Nếu ánh xạ thất bại thì hàm sẽ trả về giá trị \texttt{-1}.
+
+        \begin{lstlisting}[style=Cstyle,language=C]
+      if (vm_map_ram(caller, area->rg_start, area->rg_end, old_end, incnumpage, newrg) < 0)
+        return -1; /* Map the memory to MEMRAM */
+      return 0;
+    }\end{lstlisting}
+\subsubsection{\texttt{mm.c}}
+
+\subsubsubsection{Hàm \texttt{vmap\_page\_range}}
+
+
+Chức năng: Ánh xạ một dải trang ảo (\texttt{pgnum} trang, bắt đầu từ \texttt{addr}) vào một danh sách các frame vật lý \texttt{struct framephy\_struct *frames}. 
+
+
+Khởi tạo \texttt{fpit} (một iterator của \texttt{fp}) dùng để duyệt danh sách các frame đã cấp phát và lấy trang số đầu tiên (\texttt{pgn}), tính từ \texttt{addr}.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+    int vmap_page_range(struct pcb_t *caller,           // process call
+                        int addr,                       // start address which is aligned to pagesz
+                        int pgnum,                      // num of mapping page
+                        struct framephy_struct *frames, // list of the mapped frames
+                        struct vm_rg_struct *ret_rg)    // return mapped region, the real mapped fp
+    {                                                   // no guarantee all given pages are mapped
+      struct framephy_struct *fpit = malloc(sizeof(struct framephy_struct));
+      int pgit = 0;
+      int pgn = PAGING_PGN(addr);\end{lstlisting}
+
+Bắt đầu và kết thúc ánh xạ đều khởi tạo là \texttt{addr} (biến \texttt{addr} là địa chỉ ảo bắt đầu ánh xạ phải đã được cấp phát) và kết nối iterator vào danh sách frames (\texttt{fpit->fp\_next = frames}).
+
+\begin{lstlisting}[style=Cstyle,language=C]
+      /* TODO: update the rg_end and rg_start of ret_rg */
+      ret_rg->rg_end = ret_rg->rg_start = addr;
+      fpit->fp_next = frames;\end{lstlisting}
+
+Vòng lặp ánh xạ từng trang:
+
+\begin{itemize}
+ \item  Cập nhật trang số tương ứng tại địa chỉ và tiếp tục duyệt tới frame tiếp theo.
+\begin{lstlisting}[style=Cstyle,language=C]
+      /* TODO map range of frame to address space
+       *      [addr to addr + pgnum*PAGING_PAGESZ
+       *      in page table caller->mm->pgd[]
+       */
+      /* Tracking for later page replacement activities (if needed)
+       * Enqueue new usage page */
+      for (pgit = 0; pgit < pgnum; pgit++)
+      {
+        fpit = fpit->fp_next;
+        pgn = PAGING_PGN((addr + pgit * PAGING_PAGESZ));
+\end{lstlisting}
+ \item Nếu tồn tại trang số thì gán ánh xạ trang $\rightarrow$ frame vào bảng trang (\texttt{caller->mm->pgd[pgn]}: entry của bảng trang tại chỉ số \texttt{pgn}, gán entry này ánh xạ tới frame vật lý \texttt{fpit->fpn})
+ \item Thêm trang \texttt{pgn} (số hiệu trang ảo) vào danh sách FIFO trong tiến trình, để dùng sau này cho việc thay thế trang khi trang có BIT PRESENT (hiện hữu) không bật (\texttt{enlist\_pgn\_node}).
+ 
+\begin{lstlisting}[style=Cstyle,language=C]
+        if (fpit)
+        {
+          pte_set_fpn(&(caller->mm->pgd[pgn]), fpit->fpn);
+          enlist_pgn_node(&caller->mm->fifo_pgn, pgn);
+        }
+      }
+\end{lstlisting} 
+\item Cập nhật vùng kết thúc ánh xạ.
+\begin{lstlisting}[style=Cstyle,language=C]    
+      ret_rg->rg_end += (pgit - 1) * PAGING_PAGESZ;
+      return 0;
+    }
+\end{lstlisting} 
+\end{itemize}
+    
+\subsubsubsection{Hàm \texttt{alloc\_pages\_range}}
+Chức năng: Cấp phát \texttt{req\_pgnum} frame vật lý cho tiến trình caller, và lưu vào danh sách \texttt{frm\_lst}. Nếu không còn RAM trống, sẽ thực hiện thay thế trang (Page replacement) để swap một trang ra không gian SWAP, rồi tái sử dụng frame đó (biến \texttt{req\_pgnum} thể hiện số trang cần cấp phát, \texttt{frm\_lst} là danh sách các frame vật lý được cấp phát).
+
+
+Khởi tạo các biến:
+
+\begin{itemize}
+    \item \texttt{pgit}: chỉ số của vòng lặp để cấp \texttt{req\_pgnum} frame.
+    \item \texttt{fpn}: số hiệu frame vật lý (Frame Page Number) sau khi được cấp phát.
+    \item \texttt{newfp\_str}: con trỏ đến \texttt{framephy\_struct} mới được tạo ra cho mỗi frame.
+    
+\end{itemize}
+\begin{lstlisting}[style=Cstyle,language=C]
+    int alloc_pages_range(struct pcb_t *caller, int req_pgnum, struct framephy_struct **frm_lst)
+    {
+      int pgit, fpn;
+      struct framephy_struct *newfp_str;
+\end{lstlisting}
+
+Duyệt vòng lặp để cấp từng trang, ta chia làm 2 trường hợp.
+
+
+\textbf{Trường hợp 1:} RAM còn trống $\rightarrow$ cấp phát bình thường.
+
+
+Nếu lấy thành công frame vật lý trống từ vùng \texttt{caller->mram} thì giá trị frame sẽ được lưu vào \texttt{fpn}.
+\begin{lstlisting}[style=Cstyle,language=C]    
+      for (pgit = 0; pgit < req_pgnum; pgit++)
+      {
+        /* TODO: allocate the page */
+        // TRƯỜNG HỢP 1: 
+        if (MEMPHY_get_freefp(caller->mram, &fpn) == 0)
+        {
+\end{lstlisting}
+    \begin{itemize}
+            \item Cấp phát 1 vùng nhớ và lưu thông tin về frame vừa lấy được (gán số hiệu frame vật lý - \texttt{fpn} và gán tiến trình sở hữu frame).
+\begin{lstlisting}[style=Cstyle,language=C]
+          newfp_str = (struct framephy_struct *)malloc(sizeof(struct framephy_struct));
+          newfp_str->fpn = fpn;
+          newfp_str->owner = caller->mm;
+\end{lstlisting}
+ \item Thêm frame mới vào danh sách trả về \texttt{frm\_lst} (nếu là node đầu tiên, ta chỉ cần gán làm đầu danh sách, ngược lại gắn tiếp tục node mới).
+ 
+\begin{lstlisting}[style=Cstyle,language=C]
+          if (!*frm_lst)
+            *frm_lst = newfp_str;
+          else
+          {
+            newfp_str->fp_next = *frm_lst;
+            *frm_lst = newfp_str;
+          }
+\end{lstlisting}
+   \item Đánh dấu rằng frame này đã được sử dụng trong RAM.
+   \end{itemize}
+\begin{lstlisting}[style=Cstyle,language=C]
+          newfp_str->fp_next = caller->mram->used_fp_list;
+          caller->mram->used_fp_list = newfp_str;
+        }
+\end{lstlisting}
+
+\textbf{Trường hợp 2:} RAM hết $\rightarrow$ cần chọn trang cũ (victim) để thay thế.
+
+
+Dùng thuật toán FIFO để chọn một trang cũ (\texttt{victim\_pgn} là số hiệu trang ảo của victim):
+\begin{lstlisting}[style=Cstyle,language=C]
+        // TODO: ERROR CODE of obtaining somes but not enough frames
+        //TRƯỜNG HỢP 2
+        else
+        {
+          int victim_fpn, victim_pgn, victim_pte;
+          int swpfpn = -1;
+          if (find_victim_page(caller->mm, &victim_pgn) < 0)
+            return -1;
+\end{lstlisting}
+
+Dựa vào bảng trang (\texttt{pgd}), trích ra frame vật lý (\texttt{fpn}) mà trang victim đang dùng:
+
+\begin{lstlisting}[style=Cstyle,language=C]
+          victim_pte = caller->mm->pgd[victim_pgn];
+          victim_fpn = PAGING_FPN(victim_pte);
+\end{lstlisting}
+
+Cấp phát node \texttt{struct} frame mới, sử dụng lại frame cũ và thêm frame này vào danh sách trả về \texttt{frm\_lst}:
+
+\begin{lstlisting}[style=Cstyle,language=C]
+          newfp_str = (struct framephy_struct *)malloc(sizeof(struct framephy_struct));
+          newfp_str->fpn = victim_fpn;
+          newfp_str->owner = caller->mm;
+          if (!*frm_lst)
+            *frm_lst = newfp_str;
+          else
+          {
+            newfp_str->fp_next = *frm_lst;
+            *frm_lst = newfp_str;
+          }
+\end{lstlisting}
+
+Bắt đầu quá trình SWAP OUT:
+
+\begin{itemize}
+            \item Nếu tìm thấy chỗ trống trong thiết bị SWAP thì thực hiện \texttt{\_\_swap\_cp\_page}. Chuyển nội dung từ RAM (\texttt{victim\_fpn}) $\rightarrow$ swap (\texttt{swapfpn}) và tìm chỉ số \texttt{i} của thiết bị SWAP đang được sử dụng (\texttt{active\_mswp}) trong mảng swap \texttt{caller->mswp}.
+            
+\begin{lstlisting}[style=Cstyle,language=C]
+          int i = 0;
+          if (MEMPHY_get_freefp(caller->active_mswp, &swpfpn) == 0)
+          {
+            __swap_cp_page(caller->mram, victim_fpn, caller->active_mswp, swpfpn);
+            struct memphy_struct *mswp = (struct memphy_struct *)caller->mswp;
+            for (i = 0; i < PAGING_MAX_MMSWP; i++)
+            {
+              if (mswp + i == caller->active_mswp)
+                break;
+            }
+          }
+\end{lstlisting}
+ \item Nếu không tìm thấy thì duyệt qua các thiết bị SWAP khác. Nếu còn chỗ trống trong bất kỳ thiết bị SWAP nào được duyệt qua thì swap vào:
+ 
+\begin{lstlisting}[style=Cstyle,language=C]
+          else
+          {
+            struct memphy_struct *mswp = (struct memphy_struct *)caller->mswp;
+            for (i = 0; i < PAGING_MAX_MMSWP; i++)
+            {
+              if (MEMPHY_get_freefp(mswp + i, &swpfpn) == 0)
+              {
+                __swap_cp_page(caller->mram, victim_fpn, mswp + i, swpfpn);
+                break;
+              }
+            }
+          }
+\end{lstlisting}
+
+    \item Nếu vẫn không tìm được chỗ swap thì thực thi thất bại, trả hàm về giá trị \texttt{-3000} (Lúc này cả RAM và SWAP đều đầy).
+
+\begin{lstlisting}[style=Cstyle,language=C]
+          if (swpfpn == -1)
+            return -3000;
+\end{lstlisting}
+
+  \item Cuối cùng, đánh dấu entry trong bảng trang là đã bị swap (chỉ số \texttt{i}):
+  
+\end{itemize}
+\begin{lstlisting}[style=Cstyle,language=C]
+          pte_set_swap(&caller->mm->pgd[victim_pgn], i, swpfpn);
+        }
+      }
+      return 0;
+    }
+\end{lstlisting}
+
+\subsubsubsection{Hàm \texttt{init\_mm}} 
+
+Chức năng: Khởi tạo bộ quản lý bộ nhớ (\texttt{mm\_struct}) cho PCB \texttt{caller}.
+
+Tạo một vùng nhớ ảo (\texttt{vm\_area\_struct}) đầu tiên -- đại diện cho toàn bộ không gian ảo của tiến trình lúc mới tạo:
+
+\begin{lstlisting}[style=Cstyle,language=C]
+    int init_mm(struct mm_struct *mm, struct pcb_t *caller)
+    {
+      struct vm_area_struct *vma0 = malloc(sizeof(struct vm_area_struct));
+\end{lstlisting}
+
+Cấp phát một mảng \texttt{uint32\_t} để chứa PTEs (Page Table Entries):
+
+\begin{lstlisting}[style=Cstyle,language=C]
+      mm->pgd = malloc(PAGING_MAX_PGN * sizeof(uint32_t));
+\end{lstlisting}
+\
+Thiết lập thông tin cho vùng nhớ ảo (\texttt{vma0}):
+
+\begin{itemize}
+        \item \texttt{vm\_id = 1}: đặt ID cho vùng nhớ đầu tiên.
+        \item \texttt{vm\_start = 0}: bắt đầu từ địa chỉ ảo 0.
+        \item \texttt{vm\_end = 0}: chưa có gì được cấp phát nên kết thúc cũng là 0.
+        \item \texttt{sbrk = 0}.
+\end{itemize}
+    
+\begin{lstlisting}[style=Cstyle,language=C]    
+      /* By default the owner comes with at least one vma */
+      vma0->vm_id = 1;
+      vma0->vm_start = 0;
+      vma0->vm_end = vma0->vm_start;
+      vma0->sbrk = vma0->vm_start;
+\end{lstlisting}
+
+Tạo một vùng rỗng (range) trong \texttt{vma0}, từ \texttt{start = 0} đến \texttt{end = 0} $\rightarrow$ quản lý vùng chưa cấp phát, sau này cấp phát động \texttt{malloc}:
+
+\begin{lstlisting}[style=Cstyle,language=C]
+      struct vm_rg_struct *first_rg = init_vm_rg(vma0->vm_start, vma0->vm_end);
+\end{lstlisting}
+
+Thêm vùng trống vào danh sách free của \texttt{vma0}:
+
+\begin{lstlisting}[style=Cstyle,language=C]
+      enlist_vm_rg_node(&vma0->vm_freerg_list, first_rg);
+\end{lstlisting}
+
+Khởi tạo con trỏ kế tiếp và liên kết ngược (để \texttt{vma0} biết được nó thuộc về \texttt{mm}):
+
+\begin{lstlisting}[style=Cstyle,language=C]
+      /* TODO update VMA0 next */
+      vma0->vm_next = NULL;
+      /* Point vma owner backward */
+      vma0->vm_mm = mm;
+\end{lstlisting}
+
+ Gán \texttt{vma0} làm vùng nhớ đầu tiên trong danh sách vùng nhớ (\texttt{mmap}) của tiến trình:
+
+\begin{lstlisting}[style=Cstyle,language=C]
+      /* TODO: update mmap */
+      mm->mmap = vma0;
+      return 0;
+    }
+\end{lstlisting}
+
+\subsubsubsection{Hàm \texttt{print\_mem\_status}}
+Chức năng: Thêm một hàm in ra thông tin trạng thái của bộ nhớ.
+
+Thực hiện in ra lần lượt danh sách các vùng nhớ trống, khu vực bộ nhớ ảo hiện tại, khung trang FIFO khi cờ hiệu \texttt{VMDBG} được định nghĩa.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+void print_mem_status(struct pcb_t *caller, struct vm_area_struct *ivma)
+{
+  printf("================================================================\n");
+  printf("===== Memory Status =====\n");
+
+  printf("===== LIST OF FREE REGION =====\n");
+  print_list_rg(ivma->vm_freerg_list);
+  printf("================================================================\n");
+  printf("===== LIST OF VIRTUAL MEMORY AREA =====\n");
+  print_list_vma(ivma);
+  printf("================================================================\n");
+  printf("===== LIST OF FIFO PAGE NUMBER =====\n");
+  print_list_pgn(ivma->vm_mm->fifo_pgn);
+  printf("================================================================\n");
+  printf("\n===== End of Memory Status =====\n");
+  printf("================================================================\n");
+}
+\end{lstlisting}

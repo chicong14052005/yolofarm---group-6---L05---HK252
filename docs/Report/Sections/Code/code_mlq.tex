@@ -1,0 +1,143 @@
+\subsection{Hàng đợi - Queue}
+
+\subsubsection{\texttt{queue.h}}
+\begin{itemize}
+   \item Xây dựng cấu trúc \colorbox{gray!10}{\texttt{queue\_t}} gồm một mảng chứa tiến trình và kích cỡ hiện tại của hàng đợi.
+    \item Hàm \colorbox{gray!10}{\texttt{enqueue}} để thêm tiến trình vào hàng đợi.
+    \item Hàm \colorbox{gray!10}{\texttt{dequeue}} để lấy phần tử từ hàng đợi.
+    \item \colorbox{gray!10}{\texttt{empty}} kiểm tra để chắc chắn hàng đợi không trống.
+    \item \textbf{Bổ sung:} hàm \colorbox{gray!10}{\texttt{clear\_queue}} hỗ trợ dọn sạch tất cả các phần tử trong hàng đợi và đưa \texttt{size} về \texttt{0}.
+    
+\end{itemize}
+
+\begin{lstlisting}[style=Cstyle,language=C]
+#ifndef QUEUE_H
+#define QUEUE_H
+
+#include "common.h"
+
+#define MAX_QUEUE_SIZE 10
+
+struct queue_t
+{
+	struct pcb_t *proc[MAX_QUEUE_SIZE];
+	int size;
+};
+
+void enqueue(struct queue_t *q, struct pcb_t *proc);
+
+struct pcb_t *dequeue(struct queue_t *q);
+
+int empty(struct queue_t *q);
+
+void clear_queue(struct queue_t *q);
+
+#endif
+\end{lstlisting}
+
+
+
+\subsubsection{\texttt{queue.c}}
+
+\subsubsubsection{Hàm \texttt{enqueue}}
+
+Chức năng: Hiện thực hàm \colorbox{gray!10}{\texttt{enqueue}} để push tiến trình vào hàng đợi.
+ 
+ Trước hết, hàm thực hiện kiểm tra điều kiện \texttt{NULL} đối với con trỏ hàng đợi (\texttt{q}) và tiến trình (\texttt{proc}). Việc này giúp ngăn ngừa lỗi truy cập bộ nhớ không hợp lệ khi làm việc với các con trỏ. Tiếp theo, hàm kiểm tra xem hàng đợi đã đầy hay chưa bằng cách so sánh thuộc tính size với hằng số \texttt{MAX\_QUEUE\_SIZE}. Nếu hàng đợi đã đầy, tiến trình sẽ không được thêm vào.
+
+ Đồng thời, bổ sung cơ chế kiểm tra để tránh việc thêm trùng tiến trình vào hàng đợi. Nếu phát hiện trùng, hàm sẽ thoát ra mà không thêm tiến trình.
+ 
+Cuối cùng, nếu không có lỗi xảy ra, tiến trình sẽ được thêm vào cuối hàng đợi tại vị trí \colorbox{gray!10}{\texttt{q->size}}, và kích thước hàng đợi sẽ được tăng thêm 1 đơn vị.
+
+\begin{lstlisting}[style=Cstyle,language=C]
+void enqueue(struct queue_t *q, struct pcb_t *proc)
+{
+    
+     /* TODO: put a new process to queue [q] */
+    if (q == NULL)
+    {
+        printf("The queue is null!\n");
+        return;
+    }
+    if (proc == NULL)
+    {
+        printf("Process is null!\n");
+        return;
+    }
+
+    // Check if the queue is full
+
+    if (q->size >= MAX_QUEUE_SIZE)
+    {
+        return;
+    }
+    // Add the process to the queue
+    // Check to avoid duplicating
+    for (int i = 0; i < q->size; i++)
+    {
+        if (q->proc[i] == proc)
+        {
+            return;
+        }
+    }
+    q->proc[q->size++] = proc;
+}
+\end{lstlisting}
+
+
+
+\vspace{0.5 cm}
+\subsubsubsection{Hàm \texttt{dequeue}}
+
+Chức năng: Hiện thực hàm \colorbox{gray!10}{\texttt{dequeue}} Lấy và trả về tiến trình có độ ưu tiên cao nhất trong hàng đợi.
+ 
+Hàm bắt đầu bằng việc kiểm tra xem hàng đợi có rỗng hoặc \texttt{NULL} hay không thông qua hàm \colorbox{gray!10}{\texttt{empty(q)}}. Nếu hàng đợi không tồn tại hoặc không chứa tiến trình nào, hàm sẽ in ra thông báo lỗi và trả về \texttt{NULL}. Điều này giúp tránh lỗi truy cập vùng nhớ không hợp lệ.
+
+ Con trỏ của tiến trình xếp đầu được lưu vào biến \colorbox{gray!10}{\texttt{pop\_proc}} để trả về.
+ Hàm thực hiện thao tác loại bỏ bằng cách dịch chuyển các tiến trình phía sau nó lên một vị trí. Tiếp theo, phần tử cuối cùng trong mảng được đặt thành \texttt{NULL}, và \colorbox{gray!10}{\texttt{q->size}} được giảm đi một đơn vị, đảm bảo tính toàn vẹn của hàng đợi sau khi tiến trình bị loại bỏ. Cuối cùng, tiến trình có độ ưu tiên cao nhất được trả về để hệ thống xử lý tiếp theo.
+ 
+\begin{lstlisting}[style=Cstyle,language=C]
+struct pcb_t *dequeue(struct queue_t *q)
+{
+    /* TODO: return a pcb whose prioprity is the highest
+     * in the queue [q] and remember to remove it from q
+     * */
+    // Check if the queue is null or empty
+    if (empty(q) == 1)
+    {
+        printf("The queue is null or empty!\n");
+        return NULL;
+    }
+    
+    struct pcb_t *pop_proc = q->proc[0];
+
+    // Remove pop_proc from queue
+    for (int i = 0; i < q->size - 1; i++)
+    {
+        q->proc[i] = q->proc[i + 1];
+    }
+    q->proc[q->size - 1] = NULL;
+    q->size--;
+    return pop_proc;
+}
+\end{lstlisting}
+
+
+\vspace{0.5 cm}
+\subsubsubsection{Hàm \texttt{clear\_queue}}
+
+Chức năng: Hiện thực hàm \colorbox{gray!10}{\texttt{clear\_queue}} Hỗ trợ dọn sạch các phần tử trong hàng đợi và trả giá trị \texttt{size} về \texttt{0}.
+
+ Hàm liên tục gọi \colorbox{gray!10}{\texttt{dequeue}} đến khi kích thước của hàng đợi về 0.
+\begin{lstlisting}[style=Cstyle,language=C]
+void clear_queue(struct queue_t *q){
+        while (!empty(q)) {
+            dequeue(q);
+        }
+        q->size = 0;
+}
+\end{lstlisting}
+
+
+
+
