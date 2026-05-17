@@ -12,7 +12,7 @@ def parse_ts(iso_str: str) -> str:
     dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
     return dt.strftime("%Y-%m-%d %H:%M:%S")
 
-JSON_PATH = r"D:\Project\dadn\humidity-20260512-0407.json"
+JSON_PATH = r"./humidity-20260512-0407.json"
 
 with open(JSON_PATH) as f:
     records = json.load(f)
