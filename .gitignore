@@ -27,3 +27,9 @@ Thumbs.db
 
 # pnpm
 .pnpm-debug.log
+
+# Python
+__pycache__/
+*.pyc
+.claude
+*.egg-info/
