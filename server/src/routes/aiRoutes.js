@@ -20,6 +20,8 @@ const upload = multer({
 });
 
 router.post('/predict', authMiddleware, aiController.predict);
+router.get('/forecast/humidity', authMiddleware, aiController.getCachedForecast);
+router.post('/forecast/humidity', authMiddleware, aiController.forecastHumidity);
 router.post('/detect-disease', authMiddleware, upload.single('image'), aiController.detectDisease);
 
 module.exports = router;
