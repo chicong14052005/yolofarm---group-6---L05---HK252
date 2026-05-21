@@ -28,5 +28,22 @@ Thumbs.db
 # pnpm
 .pnpm-debug.log
 
-# venv
+# Python
+__pycache__/
+*.pyc
+.claude
+*.egg-info/
 .venv/
+venv/
+
+# grapuco
+.grapuco/
+
+# dataset
+PlantVillage/
+
+# training data
+training_data/
+
+# stitch
+stitch/

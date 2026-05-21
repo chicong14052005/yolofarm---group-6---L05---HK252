@@ -159,7 +159,7 @@ const LoginPage = () => {
             )}
 
             <button type="submit" className="submit-btn" disabled={loading}>
-              {loading ? '⟳' : (isLogin ? t('login.signIn') : t('login.createAccount'))}
+              {loading ? <span className="spinner"></span> : (isLogin ? t('login.signIn') : t('login.createAccount'))}
               {!loading && <span>→</span>}
             </button>
           </form>

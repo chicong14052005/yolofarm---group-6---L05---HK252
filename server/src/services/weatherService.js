@@ -33,6 +33,13 @@ const getVietnamNow = () => {
   return new Date(vnDateText);
 };
 
+const pad2 = (value) => String(value).padStart(2, '0');
+
+const formatVietnamDateTime = (date = getVietnamNow()) => (
+  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())} `
+  + `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`
+);
+
 const normalizeOpenMeteoData = (data) => {
   const temperature = Number(data.current.temperature_2m);
   const humidity = Number(data.current.relative_humidity_2m);
@@ -246,7 +253,13 @@ const weatherService = {
 
           // Emit qua socket cho frontend
           if (io) {
-            io.emit('sensorData', { type: sensor.type, value: sensor.value, timestamp: new Date() });
+            const recordedAt = formatVietnamDateTime();
+            io.emit('sensorData', {
+              type: sensor.type,
+              value: sensor.value,
+              recorded_at: recordedAt,
+              timestamp: recordedAt
+            });
           }
 
           console.log(`[Weather] Đã gửi ${sensor.type}: ${sensor.value}`);

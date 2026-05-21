@@ -256,15 +256,16 @@
   border-radius: 3px;
 }
 
-/* Day headers: NOT sticky, just sits above the scroll area */
+/* Day headers: sticky, inside the scroll container for perfect alignment */
 .cal-day-headers {
   display: flex;
   flex-shrink: 0;
   border-bottom: 2px solid var(--border-light);
   background: var(--bg-card);
   box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  /* Bù trừ cho thanh cuộn dọc (scrollbar) của phần bên dưới (6px) */
-  padding-right: 10px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .cal-time-gutter-header {

@@ -1,0 +1,16 @@
+[project]
+name = "ai-forecast"
+version = "0.2.0"
+description = "Humidity time-series forecasting with GRU for YoloFarm"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.8.0",
+  "python-dotenv>=1.0.1",
+  "numpy>=1.26.0",
+  "pandas>=2.2.0",
+  "torch>=2.3.0",
+  "mysql-connector-python>=9.0.0",
+  "sqlalchemy>=2.0.0",
+]

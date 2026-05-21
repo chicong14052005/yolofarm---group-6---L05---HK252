@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { io as socketIO } from 'socket.io-client';
 import Sidebar from '../../components/common/Sidebar/Sidebar';
 import ChartCarousel from '../../components/charts/ChartCarousel';
+import HumidityHistoryTable from '../../components/charts/HumidityHistoryTable';
 import { useLanguage } from '../../context/LanguageContext';
 import { SENSOR_UNITS, type SensorType } from '../../types/sensor';
 import { toast } from 'react-toastify';
@@ -15,6 +16,13 @@ interface SensorReading {
 interface Device {
   id: number; device_name: string; device_type: string; status: string;
   last_toggled_at?: string;
+}
+
+interface SensorSocketEvent {
+  type: SensorType;
+  value: number;
+  recorded_at?: string;
+  timestamp?: string;
 }
 
 const SENSOR_ICONS: Record<string, string> = {
@@ -40,6 +48,8 @@ const DashboardPage = () => {
 
   const [sensors, setSensors] = useState<{ type: SensorType; value: number; change: number; label: string }[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
+  const [latestSensorEvent, setLatestSensorEvent] = useState<SensorSocketEvent | null>(null);
+  const [activeChartType, setActiveChartType] = useState<SensorType>('temperature');
 
   const fallbackSensors = useCallback(() => [
     { type: 'temperature' as SensorType, value: 24, change: 0, label: sensorLabels.temperature },
@@ -70,10 +80,12 @@ const DashboardPage = () => {
         d.device_type === type ? { ...d, status, last_toggled_at: new Date().toISOString() } : d
       ));
     });
-    socket.on('sensorData', ({ type, value }: { type: string; value: number }) => {
+    socket.on('sensorData', (event: SensorSocketEvent) => {
+      const { type, value } = event;
       setSensors(prev => prev.map(s =>
         s.type === type ? { ...s, value } : s
       ));
+      setLatestSensorEvent(event);
     });
     return () => { socket.disconnect(); };
   }, []);
@@ -146,7 +158,10 @@ const DashboardPage = () => {
                 <p className="card-subtitle">{t('dashboard.smoothCurve')}</p>
               </div>
             </div>
-            <ChartCarousel />
+            <ChartCarousel
+              latestSensorEvent={latestSensorEvent}
+              onActiveTypeChange={setActiveChartType}
+            />
           </div>
 
           <div className="dashboard-right">
@@ -168,6 +183,10 @@ const DashboardPage = () => {
             </div>
           </div>
         </div>
+
+        {activeChartType === 'humidity' && (
+          <HumidityHistoryTable />
+        )}
       </main>
     </div>
   );

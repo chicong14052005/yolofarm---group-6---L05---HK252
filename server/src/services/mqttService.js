@@ -79,7 +79,13 @@ const mqttService = {
 
           // Push realtime đến Frontend
           if (io) {
-            io.emit('sensorData', { type: sensorFeedMap[feedKey], value, timestamp: new Date() });
+            const recordedAt = inserted.recorded_at || new Date();
+            io.emit('sensorData', {
+              type: sensorFeedMap[feedKey],
+              value,
+              recorded_at: recordedAt,
+              timestamp: recordedAt
+            });
           }
         }
 

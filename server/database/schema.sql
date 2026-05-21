@@ -8,13 +8,15 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS privacy_policy;
 
-DROP TABLE IF EXISTS terms;
-
 DROP TABLE IF EXISTS user_preferences;
 
 DROP TABLE IF EXISTS settings;
 
 DROP TABLE IF EXISTS notifications;
+
+DROP TABLE IF EXISTS forecast_history;
+
+drop table if exists forecast_cache;
 
 DROP TABLE IF EXISTS schedules;
 
@@ -120,7 +122,48 @@ CREATE TABLE IF NOT EXISTS settings (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+-- Bảng cache dự báo AI
+CREATE TABLE IF NOT EXISTS forecast_cache (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    sensor_type VARCHAR(50) NOT NULL UNIQUE,
+    predictions JSON,
+    historical_predictions JSON,
+    data_summary JSON,
+    alert_status JSON,
+    model_version VARCHAR(50),
+    horizon_hours INT DEFAULT 24,
+    interval_minutes INT DEFAULT 15,
+    generated_at TIMESTAMP NULL,
+    fallback BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 -- Bảng tùy chọn người dùng (FK → users)
+-- Bang lich su tung diem du bao AI
+CREATE TABLE IF NOT EXISTS forecast_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    sensor_type VARCHAR(50) NOT NULL,
+    run_id VARCHAR(64) NOT NULL,
+    point_type ENUM('historical', 'future') NOT NULL,
+    target_timestamp TIMESTAMP NOT NULL,
+    actual_value FLOAT DEFAULT NULL,
+    predicted_value FLOAT DEFAULT NULL,
+    lower_value FLOAT DEFAULT NULL,
+    upper_value FLOAT DEFAULT NULL,
+    confidence FLOAT DEFAULT NULL,
+    model_version VARCHAR(50),
+    horizon_hours INT DEFAULT 24,
+    interval_minutes INT DEFAULT 15,
+    generated_at TIMESTAMP NULL,
+    fallback BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_forecast_history_lookup (sensor_type, point_type, target_timestamp),
+    INDEX idx_forecast_history_run (sensor_type, run_id),
+    INDEX idx_forecast_history_generated (generated_at)
+);
+
+-- User preferences
 CREATE TABLE IF NOT EXISTS user_preferences (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT UNIQUE NOT NULL,
@@ -129,7 +172,8 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     primary_color VARCHAR(20) DEFAULT '#2BAE66',
     border_radius INT DEFAULT 8,
     layout_mode VARCHAR(10) DEFAULT 'desktop',
-    font_family VARCHAR(50) DEFAULT '''Inter''',
+    font_family VARCHAR(50) DEFAULT 'Inter',
+    notifications_enabled BOOLEAN DEFAULT TRUE,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
@@ -209,6 +253,16 @@ VALUES (
         'auto_irrigation_enabled',
         'true',
         'Bật/tắt tưới tự động theo ngưỡng'
+    ),
+    (
+        'forecast_humidity_warning_threshold',
+        '40',
+        'Ngưỡng cảnh báo dự báo độ ẩm không khí thấp (%)'
+    ),
+    (
+        'forecast_humidity_min_confidence',
+        '0.7',
+        'Độ tin cậy tối thiểu để phát cảnh báo dự báo (0-1)'
     );
 
 -- User preferences mặc định cho admin

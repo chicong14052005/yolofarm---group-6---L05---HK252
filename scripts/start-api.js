@@ -1,154 +1,154 @@
-/**
- * start-api.js
- * Cross-platform script to auto-setup Python .venv and start FastAPI (uvicorn).
- * Works on both Windows (dev) and Linux (Render deploy).
- */
-
-const { spawn, execSync } = require('child_process');
-const path = require('path');
+const { spawn, execFileSync } = require('child_process');
 const fs = require('fs');
+const path = require('path');
 
 const rootDir = path.join(__dirname, '..');
+const apiDir = path.join(rootDir, 'server', 'AI_feature');
+const reqFile = path.join(apiDir, 'requirements.txt');
+const serverEnvFile = path.join(rootDir, 'server', '.env');
 const isWin = process.platform === 'win32';
 const venvDir = path.join(rootDir, '.venv');
 const binDir = path.join(venvDir, isWin ? 'Scripts' : 'bin');
 const pythonExe = path.join(binDir, isWin ? 'python.exe' : 'python');
 const pipExe = path.join(binDir, isWin ? 'pip.exe' : 'pip');
-const apiDir = path.join(rootDir, 'server', 'api');
-const reqFile = path.join(apiDir, 'requirements.txt');
 
-// ── Helper: Tìm Python system command ──
-// Trên Windows, thử `py -3` (py launcher) trước, rồi `python`, `python3`
-// Trên Linux/macOS, thử `python3` trước, rồi `python`
+function readEnv(filePath) {
+  const env = {};
+  if (!fs.existsSync(filePath)) {
+    return env;
+  }
+
+  for (const line of fs.readFileSync(filePath, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) {
+      continue;
+    }
+
+    const separator = trimmed.indexOf('=');
+    if (separator === -1) {
+      continue;
+    }
+
+    const key = trimmed.slice(0, separator).trim();
+    let value = trimmed.slice(separator + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    env[key] = value;
+  }
+
+  return env;
+}
+
+function run(command, args, options = {}) {
+  return execFileSync(command, args, {
+    cwd: rootDir,
+    encoding: 'utf8',
+    stdio: options.stdio || ['pipe', 'pipe', 'pipe'],
+  });
+}
+
 function findSystemPython() {
   const candidates = isWin
-    ? ['py -3.12', 'py -3.11', 'py -3.10', 'python', 'python3']
-    : ['python3.12', 'python3.11', 'python3.10', 'python3', 'python'];
+    ? [
+        ['py', ['-3.12']],
+        ['py', ['-3.11']],
+        ['py', ['-3.10']],
+        ['python', []],
+        ['python3', []],
+      ]
+    : [
+        ['python3.12', []],
+        ['python3.11', []],
+        ['python3.10', []],
+        ['python3', []],
+        ['python', []],
+      ];
 
-  for (const cmd of candidates) {
+  for (const [command, baseArgs] of candidates) {
     try {
-      const version = execSync(`${cmd} --version`, {
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      }).trim();
-
-      // Đảm bảo phiên bản >= 3.10
+      const version = run(command, [...baseArgs, '--version']).trim();
       const match = version.match(/Python (\d+)\.(\d+)/);
-      if (match) {
-        const major = parseInt(match[1], 10);
-        const minor = parseInt(match[2], 10);
-        if (major === 3 && minor >= 10) {
-          console.log(`   Found: ${cmd} → ${version}`);
-          return cmd;
-        } else {
-          console.log(`   Skipping ${cmd} (${version}) — cần Python >= 3.10`);
-        }
+      if (!match) {
+        continue;
+      }
+
+      const major = Number(match[1]);
+      const minor = Number(match[2]);
+      if (major === 3 && minor >= 10 && minor <= 12) {
+        console.log(`[api] Found Python: ${command} ${baseArgs.join(' ')} -> ${version}`);
+        return { command, args: baseArgs };
       }
     } catch {
-      // command không tồn tại, thử cái tiếp theo
+      // Try the next candidate.
     }
   }
+
   return null;
 }
 
-// ══════════════════════════════════════════════════════════
-// Step 1: Create .venv if python.exe doesn't exist inside it
-// ══════════════════════════════════════════════════════════
-if (!fs.existsSync(pythonExe)) {
-  console.log('🐍 Python virtual environment not found, creating .venv...');
-
-  const pyCmd = findSystemPython();
-  if (!pyCmd) {
-    console.error('❌ Không tìm thấy Python >= 3.10 trên hệ thống.');
-    console.error('   Vui lòng cài đặt Python >= 3.10 từ https://www.python.org/downloads/');
-    console.error('   (Trên Windows, hãy chọn "Add Python to PATH" khi cài đặt)');
-    process.exit(1);
-  }
-
-  try {
-    console.log(`   Creating venv with: ${pyCmd} -m venv .venv`);
-    execSync(`${pyCmd} -m venv "${venvDir}"`, {
-      cwd: rootDir,
-      stdio: 'inherit',
-    });
-  } catch (err) {
-    console.error('❌ Không thể tạo virtual environment:', err.message);
-    process.exit(1);
-  }
-
-  // Verify venv was actually created correctly
-  if (!fs.existsSync(pythonExe)) {
-    console.error('❌ Virtual environment được tạo nhưng python.exe không tồn tại.');
-    console.error(`   Kiểm tra thư mục: ${binDir}`);
-    console.error('   Có thể Python trên máy là Windows Store stub.');
-    console.error('   Hãy cài Python thật từ https://www.python.org/downloads/');
-
-    // Cleanup invalid venv
-    try {
-      fs.rmSync(venvDir, { recursive: true, force: true });
-    } catch { /* ignore */ }
-
-    process.exit(1);
-  }
-
-  console.log('✅ Virtual environment created successfully');
+if (!fs.existsSync(reqFile)) {
+  console.error(`[api] Missing requirements file: ${reqFile}`);
+  process.exit(1);
 }
 
-// ══════════════════════════════════════════════════════════
-// Step 2: Install requirements if needed
-// ══════════════════════════════════════════════════════════
-// Uses a marker file to track when requirements were last installed,
-// so we skip re-installation if requirements.txt hasn't changed.
-const markerFile = path.join(venvDir, '.requirements_installed');
+if (!fs.existsSync(pythonExe)) {
+  const systemPython = findSystemPython();
+  if (!systemPython) {
+    console.error('[api] Python 3.10-3.12 is required for the AI API.');
+    process.exit(1);
+  }
+
+  console.log('[api] Creating Python virtual environment...');
+  try {
+    run(systemPython.command, [...systemPython.args, '-m', 'venv', venvDir], { stdio: 'inherit' });
+  } catch (error) {
+    console.error(`[api] Cannot create virtual environment: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+const markerFile = path.join(venvDir, '.ai_feature_requirements_installed');
 const reqMtime = fs.statSync(reqFile).mtimeMs;
 let needsInstall = true;
 
 if (fs.existsSync(markerFile)) {
-  try {
-    const markerMtime = parseFloat(fs.readFileSync(markerFile, 'utf-8'));
-    if (markerMtime >= reqMtime) {
-      needsInstall = false;
-    }
-  } catch {
-    // marker file corrupted, re-install
-  }
+  const markerMtime = Number(fs.readFileSync(markerFile, 'utf8'));
+  needsInstall = !Number.isFinite(markerMtime) || markerMtime < reqMtime;
 }
 
 if (needsInstall) {
-  console.log('📦 Installing Python dependencies (this may take a while on first run)...');
+  console.log('[api] Installing Python dependencies for AI features...');
   try {
-    execSync(`"${pipExe}" install -r "${reqFile}"`, {
-      cwd: rootDir,
-      stdio: 'inherit',
-    });
+    run(pipExe, ['install', '-r', reqFile], { stdio: 'inherit' });
     fs.writeFileSync(markerFile, String(Date.now()));
-    console.log('✅ Python dependencies installed successfully');
-  } catch (err) {
-    console.error('⚠️  Warning: Could not install some dependencies.');
-    console.error('   Hãy thử cài thủ công:');
-    console.error(`   "${pipExe}" install -r "${reqFile}"`);
-    // Không exit — vẫn thử start server, có thể deps đã có sẵn
+  } catch (error) {
+    console.error(`[api] Dependency installation failed: ${error.message}`);
+    process.exit(1);
   }
 }
 
-// ══════════════════════════════════════════════════════════
-// Step 3: Start uvicorn
-// ══════════════════════════════════════════════════════════
-console.log('🚀 Starting AI API server on http://localhost:8000 ...');
+console.log('[api] Starting unified FastAPI AI server on http://localhost:8000 ...');
 
-const proc = spawn(pythonExe, [
-  '-m', 'uvicorn', 'main:app',
-  '--reload',
-  '--host', '0.0.0.0',
-  '--port', '8000',
-], {
-  cwd: apiDir,
-  stdio: 'inherit',
-  env: { ...process.env },
-});
+const proc = spawn(
+  pythonExe,
+  ['-m', 'uvicorn', 'main:app', '--reload', '--host', '0.0.0.0', '--port', '8000'],
+  {
+    cwd: apiDir,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      ...readEnv(serverEnvFile),
+      PYTHONUNBUFFERED: '1',
+    },
+  }
+);
 
-proc.on('error', (err) => {
-  console.error('❌ Failed to start AI API server:', err.message);
+proc.on('error', (error) => {
+  console.error(`[api] Failed to start AI API server: ${error.message}`);
   process.exit(1);
 });
 

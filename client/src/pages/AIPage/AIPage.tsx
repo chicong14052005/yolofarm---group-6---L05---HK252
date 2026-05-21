@@ -3,8 +3,8 @@ import { useDropzone } from 'react-dropzone';
 import { toast } from 'react-toastify';
 import Sidebar from '../../components/common/Sidebar/Sidebar';
 import { useLanguage } from '../../context/LanguageContext';
-import { HiOutlineUpload, HiOutlineClock } from 'react-icons/hi';
 import aiService from '../../services/aiService';
+import { HiOutlineUpload, HiOutlineClock } from 'react-icons/hi';
 import type { DiseaseDetectionData } from '../../types/ai';
 import '../../pages/DashboardPage/DashboardPage.css';
 import './AIPage.css';
@@ -50,7 +50,7 @@ const AIPage = () => {
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop, accept: { 'image/*': ['.jpg', '.png', '.jpeg'] }, maxFiles: 1
+    onDrop, accept: { 'image/*': ['.jpg', '.png', '.jpeg'] }, maxFiles: 1,
   });
 
   return (
@@ -69,11 +69,13 @@ const AIPage = () => {
             {/* ── Upload Area ── */}
             <div className="card upload-card">
               <div {...getRootProps()} className={`dropzone ${isDragActive ? 'active' : ''}`}>
-                <input {...getInputProps()} />
+                <input {...getInputProps()} disabled={loading} />
                 <HiOutlineUpload className="upload-icon" />
                 <h3>{t('ai.dragDrop')}</h3>
                 <p>{t('ai.dragDropDesc')}</p>
-                <button className="btn btn-primary" type="button">{t('ai.selectImage')}</button>
+                <button className="btn btn-primary" type="button" disabled={loading}>
+                  {loading ? 'Đang xử lý...' : t('ai.selectImage')}
+                </button>
               </div>
             </div>
 
@@ -134,6 +136,15 @@ const AIPage = () => {
                       <p className="treatment-preview">{result.treatment}</p>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {result && result.disease_name === 'unknown' && !error && (
+              <div className="card detection-card animate-fadeInUp">
+                <div className="detection-body" style={{ justifyContent: 'center', textAlign: 'center', padding: '2rem' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: 'var(--warning)', marginBottom: '1rem' }}>info</span>
+                  <p style={{ color: 'var(--text-muted)' }}>{result.description || 'Dịch vụ nhận diện chưa được kết nối.'}</p>
                 </div>
               </div>
             )}
