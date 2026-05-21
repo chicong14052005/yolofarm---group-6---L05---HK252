@@ -35,3 +35,15 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+
+# grapuco
+.grapuco/
+
+# dataset
+PlantVillage/
+
+# training data
+training_data/
+
+# stitch
+stitch/

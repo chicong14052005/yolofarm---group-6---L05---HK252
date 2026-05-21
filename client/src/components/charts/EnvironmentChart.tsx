@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -10,6 +11,11 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
+import {
+  formatMinuteLabel,
+  minutesSinceStartOfDay,
+  normalizeYoloFarmTimestamp,
+} from '../../utils/timeUtils';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
@@ -27,178 +33,187 @@ interface ForecastPoint {
 
 interface EnvironmentChartProps {
   data: DataPoint[];
-  historicalPredictions?: DataPoint[];
   forecastData?: ForecastPoint[];
   label: string;
   unit: string;
   color: string;
-  showDateLabels?: boolean;
+  isHumidityChart?: boolean;
 }
+
+function toChartPoint(point: DataPoint) {
+  return {
+    x: minutesSinceStartOfDay(normalizeYoloFarmTimestamp(point.time)),
+    y: point.value,
+  };
+}
+
+const FORECAST_COLOR = '#f97316';
+const UPPER_BOUND_COLOR = '#f59e0b';
+const CONFIDENCE_FILL = 'rgba(249, 115, 22, 0.14)';
 
 const EnvironmentChart = ({
   data,
-  historicalPredictions = [],
   forecastData = [],
   label,
   unit,
   color,
-  showDateLabels = false,
+  isHumidityChart = false,
 }: EnvironmentChartProps) => {
-  const allPoints = [...data, ...historicalPredictions, ...forecastData]
-    .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+  const {
+    actualPoints,
+    forecastPoints,
+    lowerPoints,
+    upperPoints,
+    hasForecast,
+  } = useMemo(() => {
+    const forecast = forecastData.map((point) => ({
+      ...point,
+      time: normalizeYoloFarmTimestamp(point.time),
+    }));
 
-  const labels = allPoints.map((d) => {
-    const date = new Date(d.time);
-    if (showDateLabels) {
-      const day = date.toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' });
-      const time = date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-      return `${day}\n${time}`;
-    }
-    return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-  });
+    return {
+      actualPoints: data.map((point) => toChartPoint(point)),
+      forecastPoints: forecast.map((point) => toChartPoint(point)),
+      lowerPoints: forecast.map((point) => ({
+        x: minutesSinceStartOfDay(point.time),
+        y: point.lower,
+      })),
+      upperPoints: forecast.map((point) => ({
+        x: minutesSinceStartOfDay(point.time),
+        y: point.upper,
+      })),
+      hasForecast: forecast.length > 0,
+    };
+  }, [data, forecastData]);
 
-  const observedMap = new Map(data.map((d) => [d.time, d.value]));
-  const historicalMap = new Map(historicalPredictions.map((d) => [d.time, d.value]));
-  const forecastMap = new Map(forecastData.map((d) => [d.time, d.value]));
-  const lowerMap = new Map(forecastData.map((d) => [d.time, d.lower]));
-  const upperMap = new Map(forecastData.map((d) => [d.time, d.upper]));
+  const actualColor = isHumidityChart ? '#2563eb' : color;
 
-  const orderedTimes = allPoints.map((d) => d.time);
-  const values = orderedTimes.map((t) => observedMap.get(t) ?? null);
-  const historicalValues = orderedTimes.map((t) => historicalMap.get(t) ?? null);
-  const forecastValues = orderedTimes.map((t) => forecastMap.get(t) ?? null);
-  const lowerValues = orderedTimes.map((t) => lowerMap.get(t) ?? null);
-  const upperValues = orderedTimes.map((t) => upperMap.get(t) ?? null);
-
-  const hasHistorical = historicalPredictions.length > 0;
-  const hasForecast = forecastData.length > 0;
-  const showLegend = hasHistorical || hasForecast;
-
-  const xScale = showDateLabels
-    ? {
-        ticks: {
-          color: 'rgba(148, 163, 184, 0.7)',
-          font: { size: 10 },
-          maxTicksLimit: 10,
-          maxRotation: 0,
-        },
-        grid: {
-          color: 'rgba(148, 163, 184, 0.08)',
-        },
-        border: { display: false },
-      }
-    : {
-        ticks: {
-          color: 'rgba(148, 163, 184, 0.7)',
-          font: { size: 10 },
-          maxTicksLimit: 8,
-          maxRotation: 0,
-        },
-        grid: {
-          color: 'rgba(148, 163, 184, 0.08)',
-        },
-        border: { display: false },
-      };
-
-  const chartData = {
-    labels,
+  const chartData = useMemo(() => ({
     datasets: [
       {
         label: `${label} thực tế (${unit})`,
-        data: values,
-        borderColor: color,
-        backgroundColor: `${color}22`,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 0,
-        pointHoverRadius: 5,
-        pointHoverBackgroundColor: color,
+        data: actualPoints,
+        borderColor: actualColor,
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.35,
+        pointRadius: 2,
+        pointHitRadius: 10,
+        pointHoverRadius: 6,
+        pointHoverBackgroundColor: actualColor,
+        pointBorderWidth: 1,
+        pointBorderColor: actualColor,
         borderWidth: 2.5,
       },
-      ...(hasHistorical
+      ...(hasForecast
         ? [
             {
-              label: `${label} dự đoán (${unit})`,
-              data: historicalValues,
-              borderColor: color,
+              label: `${label} dự báo (${unit})`,
+              data: forecastPoints,
+              borderColor: FORECAST_COLOR,
               backgroundColor: 'transparent',
-              borderDash: [4, 3],
+              borderDash: [8, 5],
+              fill: false,
+              tension: 0.35,
+              pointRadius: 0,
+              pointHoverRadius: 5,
+              pointHoverBackgroundColor: FORECAST_COLOR,
+              borderWidth: 2.25,
+            },
+            {
+              label: 'Upper bound',
+              data: upperPoints,
+              borderColor: UPPER_BOUND_COLOR,
+              backgroundColor: 'transparent',
+              borderDash: [3, 4],
               fill: false,
               tension: 0.35,
               pointRadius: 0,
               borderWidth: 1.5,
             },
-          ]
-        : []),
-      ...(hasForecast
-        ? [
-            {
-              label: `${label} dự báo (${unit})`,
-              data: forecastValues,
-              borderColor: color,
-              backgroundColor: 'transparent',
-              borderDash: [6, 4],
-              fill: false,
-              tension: 0.35,
-              pointRadius: 0,
-              borderWidth: 2,
-            },
-            {
-              label: 'Upper bound',
-              data: upperValues,
-              borderColor: 'transparent',
-              backgroundColor: 'transparent',
-              pointRadius: 0,
-              fill: false,
-            },
             {
               label: 'Confidence interval',
-              data: lowerValues,
+              data: lowerPoints,
               borderColor: 'transparent',
-              backgroundColor: `${color}1f`,
+              backgroundColor: CONFIDENCE_FILL,
               pointRadius: 0,
               fill: '-1' as const,
+              tension: 0.35,
             },
           ]
         : []),
     ],
-  };
+  }), [
+    actualColor,
+    actualPoints,
+    forecastPoints,
+    hasForecast,
+    label,
+    lowerPoints,
+    unit,
+    upperPoints,
+  ]);
 
-  const options: React.ComponentProps<typeof Line>['options'] = {
+  const options: React.ComponentProps<typeof Line>['options'] = useMemo(() => ({
     responsive: true,
     maintainAspectRatio: false,
+    parsing: false,
     interaction: {
-      mode: 'index' as const,
+      mode: 'nearest' as const,
       intersect: false,
     },
     plugins: {
       legend: {
-        display: showLegend,
+        display: isHumidityChart || hasForecast,
+        labels: {
+          color: 'rgba(148, 163, 184, 0.86)',
+          boxWidth: 34,
+          boxHeight: 10,
+          usePointStyle: false,
+        },
       },
       tooltip: {
-        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+        backgroundColor: 'rgba(15, 23, 42, 0.92)',
         titleColor: '#e2e8f0',
         bodyColor: '#e2e8f0',
-        borderColor: color,
+        borderColor: isHumidityChart ? FORECAST_COLOR : color,
         borderWidth: 1,
         padding: 10,
         cornerRadius: 8,
-        displayColors: false,
+        displayColors: true,
         callbacks: {
+          title: (items) => {
+            const minute = Number(items[0]?.parsed.x ?? 0);
+            return formatMinuteLabel(minute);
+          },
           label: (ctx) => {
-            if (ctx.dataset.label === 'Confidence interval' || ctx.dataset.label === 'Upper bound') {
-              return '';
-            }
-            return `${ctx.dataset.label || label}: ${ctx.parsed.y ?? 0} ${unit}`;
+            if (ctx.parsed.y === null || Number.isNaN(ctx.parsed.y)) return '';
+            return `${ctx.dataset.label || label}: ${Number(ctx.parsed.y).toFixed(2)} ${unit}`;
           },
         },
       },
     },
     scales: {
-      x: xScale,
-      y: {
+      x: {
+        type: 'linear' as const,
+        min: 0,
+        max: 1439,
         ticks: {
-          color: 'rgba(148, 163, 184, 0.7)',
+          color: 'rgba(148, 163, 184, 0.72)',
+          font: { size: 10 },
+          maxTicksLimit: 9,
+          callback: (value) => formatMinuteLabel(Number(value)),
+        },
+        grid: {
+          color: 'rgba(148, 163, 184, 0.08)',
+        },
+        border: { display: false },
+      },
+      y: {
+        min: isHumidityChart ? 0 : undefined,
+        max: isHumidityChart ? 100 : undefined,
+        ticks: {
+          color: 'rgba(148, 163, 184, 0.72)',
           font: { size: 10 },
           padding: 8,
         },
@@ -208,7 +223,7 @@ const EnvironmentChart = ({
         border: { display: false },
       },
     },
-  };
+  }), [color, hasForecast, isHumidityChart, label, unit]);
 
   return (
     <div style={{ width: '100%', height: '220px' }}>

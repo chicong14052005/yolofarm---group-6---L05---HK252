@@ -1,0 +1,158 @@
+.humidity-history-card {
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
+}
+
+.humidity-history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.humidity-history-header h3 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+
+.humidity-history-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.humidity-export-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.humidity-export-btn:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+}
+
+.humidity-export-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.humidity-export-btn .material-symbols-outlined {
+  font-size: 1.1rem;
+}
+
+.humidity-history-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.humidity-history-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  color: var(--text-primary);
+}
+
+.humidity-history-table th,
+.humidity-history-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-light);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.humidity-history-table th {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.humidity-history-table td {
+  font-size: 0.92rem;
+}
+
+.humidity-history-table .positive {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.humidity-history-table .negative {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.missing-reason-cell {
+  color: var(--text-muted);
+  font-size: 0.84rem;
+  white-space: normal;
+  min-width: 180px;
+}
+
+.humidity-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  padding: 5px 10px;
+  border-radius: var(--radius-full);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.humidity-status-pill.optimal {
+  background: rgba(34, 197, 94, 0.14);
+  color: #16a34a;
+}
+
+.humidity-status-pill.low {
+  background: rgba(245, 158, 11, 0.16);
+  color: #d97706;
+}
+
+.humidity-status-pill.high {
+  background: rgba(59, 130, 246, 0.14);
+  color: #2563eb;
+}
+
+.humidity-status-pill.missing {
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--text-muted);
+}
+
+.humidity-history-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  color: var(--text-muted);
+}
+
+.humidity-history-state.error {
+  justify-content: flex-start;
+  color: var(--danger);
+}
+
+@media (max-width: 768px) {
+  .humidity-history-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .humidity-export-btn {
+    width: 100%;
+  }
+}

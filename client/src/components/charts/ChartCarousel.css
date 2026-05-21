@@ -87,10 +87,11 @@
 }
 
 .carousel-body {
-  min-height: 220px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  min-height: 240px;
+  width: 100%;
+  display: block;
+  overflow: hidden;
 }
 
 /* Loading */
@@ -158,13 +159,23 @@
 
 /* Forecast updating bar */
 .forecast-updating-bar {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--space-sm);
-  padding: 6px 0;
+  max-width: calc(100% - 24px);
+  padding: 6px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  background: var(--bg-card);
+  box-shadow: var(--shadow-sm);
   font-size: 0.8rem;
   color: var(--text-muted);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .forecast-updating-bar .carousel-spinner {

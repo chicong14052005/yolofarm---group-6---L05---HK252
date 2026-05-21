@@ -3,6 +3,7 @@ import type {
   PredictionResult,
   DiseaseDetectionResult,
   HumidityForecastResult,
+  HumidityWeeklySummaryResult,
 } from "../types/ai";
 
 const aiService = {
@@ -33,11 +34,22 @@ const aiService = {
     historyHours = 72,
     horizonHours = 24,
     confidenceThreshold = 0.7,
+    options: { force?: boolean } = {},
   ): Promise<HumidityForecastResult> {
     const { data } = await api.post("/ai/forecast/humidity", {
       history_hours: historyHours,
       horizon_hours: horizonHours,
       confidence_threshold: confidenceThreshold,
+      force: options.force ?? true,
+    }, {
+      timeout: 120000,
+    });
+    return data;
+  },
+
+  async getHumidityWeeklySummary(days = 7): Promise<HumidityWeeklySummaryResult> {
+    const { data } = await api.get("/ai/forecast/humidity/weekly-summary", {
+      params: { days },
     });
     return data;
   },

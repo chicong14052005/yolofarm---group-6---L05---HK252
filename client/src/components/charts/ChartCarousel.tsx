@@ -1,15 +1,29 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import EnvironmentChart from './EnvironmentChart';
 import { useLanguage } from '../../context/LanguageContext';
 import type { SensorType } from '../../types/sensor';
-import type { HistoricalPredictionPoint } from '../../types/ai';
+import type { HumidityForecastResult } from '../../types/ai';
 import api from '../../services/api';
 import aiService from '../../services/aiService';
+import {
+  formatLocalDateKey,
+  getLocalDateKey,
+  getYoloFarmTimeMs,
+  isSameLocalDate,
+  normalizeYoloFarmTimestamp,
+} from '../../utils/timeUtils';
 import './ChartCarousel.css';
 
 interface SensorHistoryPoint {
   recorded_at: string;
   value: number;
+}
+
+interface SensorSocketEvent {
+  type: SensorType;
+  value: number;
+  recorded_at?: string;
+  timestamp?: string;
 }
 
 interface ForecastPoint {
@@ -26,118 +40,210 @@ interface ChartConfig {
   color: string;
 }
 
+interface ChartCarouselProps {
+  latestSensorEvent?: SensorSocketEvent | null;
+  onActiveTypeChange?: (type: SensorType) => void;
+}
+
 const CHART_CONFIGS: ChartConfig[] = [
   { type: 'temperature', labelKey: 'dashboard.temperature', unit: '°C', color: '#ef4444' },
-  { type: 'humidity', labelKey: 'dashboard.humidity', unit: '%', color: '#3b82f6' },
+  { type: 'humidity', labelKey: 'dashboard.humidity', unit: '%', color: '#2563eb' },
   { type: 'soil_moisture', labelKey: 'dashboard.soilMoisture', unit: '%', color: '#22c55e' },
   { type: 'light', labelKey: 'dashboard.lightIntensity', unit: 'lux', color: '#f59e0b' },
 ];
 
-// Downsample data to ~1 hour intervals for cleaner charts
-function downsample<T extends { time: string }>(data: T[]): T[] {
-  if (data.length < 3) return data;
-  const t0 = new Date(data[0].time).getTime();
-  const t1 = new Date(data[1].time).getTime();
-  const actualMin = (t1 - t0) / 60000;
-  if (actualMin <= 0) return data;
-  const step = Math.max(1, Math.round(60 / actualMin));
-  return step <= 1 ? data : data.filter((_, i) => i % step === 0);
+const MAX_FORECAST_POINTS = 120;
+const FORECAST_POLL_ATTEMPTS = 20;
+const FORECAST_POLL_INTERVAL_MS = 3000;
+
+const sleep = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+function normalizeSeries<T extends { time: string }>(data: T[]): T[] {
+  const byTime = new Map<string, T>();
+
+  for (const item of data) {
+    const time = normalizeYoloFarmTimestamp(item.time);
+    byTime.set(time, { ...item, time });
+  }
+
+  return Array.from(byTime.values())
+    .sort((a, b) => getYoloFarmTimeMs(a.time) - getYoloFarmTimeMs(b.time));
 }
 
-// Keep only the last N days of data
-function lastDays<T extends { time: string }>(data: T[], days: number): T[] {
-  if (data.length === 0) return data;
-  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-  return data.filter((d) => new Date(d.time).getTime() >= cutoff);
+function limitPoints<T extends { time: string }>(data: T[], maxPoints: number): T[] {
+  if (data.length <= maxPoints) return data;
+
+  const step = Math.ceil(data.length / maxPoints);
+  const sampled = data.filter((_, index) => index % step === 0);
+  const last = data[data.length - 1];
+
+  if (sampled[sampled.length - 1]?.time !== last.time) {
+    sampled.push(last);
+  }
+
+  return sampled.slice(-maxPoints);
 }
 
-const ChartCarousel = () => {
+function prepareDaySeries<T extends { time: string }>(
+  data: T[],
+  dateKey: string,
+): T[] {
+  return normalizeSeries(data).filter((point) => isSameLocalDate(point.time, dateKey));
+}
+
+function hasForecastData(forecast: HumidityForecastResult | null | undefined) {
+  return Boolean(forecast && (forecast.predictions || []).length > 0);
+}
+
+const ChartCarousel = ({
+  latestSensorEvent = null,
+  onActiveTypeChange,
+}: ChartCarouselProps) => {
   const { t } = useLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [chartDateKey, setChartDateKey] = useState(() => formatLocalDateKey());
   const [historyData, setHistoryData] = useState<Record<string, { time: string; value: number }[]>>({});
   const [humidityForecast, setHumidityForecast] = useState<ForecastPoint[]>([]);
-  const [historicalPredictions, setHistoricalPredictions] = useState<{ time: string; value: number }[]>([]);
-  const [historicalActuals, setHistoricalActuals] = useState<{ time: string; value: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [forecastUpdating, setForecastUpdating] = useState(false);
+  const forecastRequestRef = useRef<Promise<void> | null>(null);
+  const initialForecastRefreshRef = useRef(false);
 
-  const mapForecastData = useCallback((forecast: {
-    predictions?: Array<{ timestamp: string; value: number; lower: number; upper: number }>;
-    historical_predictions?: Array<{ timestamp: string; actual: number; predicted: number }>;
-  }) => {
-    setHumidityForecast(
-      (forecast.predictions || []).map((p) => ({
+  const mapForecastData = useCallback((forecast: HumidityForecastResult, dateKey = chartDateKey) => {
+    const points = (forecast.predictions || [])
+      .map((p) => ({
         time: p.timestamp,
         value: p.value,
         lower: p.lower,
         upper: p.upper,
       }))
-    );
-    setHistoricalPredictions(
-      (forecast.historical_predictions || []).map((p) => ({
-        time: p.timestamp,
-        value: p.predicted,
-      }))
-    );
-    setHistoricalActuals(
-      (forecast.historical_predictions || []).map((p) => ({
-        time: p.timestamp,
-        value: p.actual,
-      }))
-    );
-  }, []);
+      .filter((point) => isSameLocalDate(point.time, dateKey));
+
+    setHumidityForecast(limitPoints(normalizeSeries(points), MAX_FORECAST_POINTS));
+  }, [chartDateKey]);
+
+  const pollForecastCache = useCallback(async () => {
+    for (let attempt = 0; attempt < FORECAST_POLL_ATTEMPTS; attempt += 1) {
+      await sleep(FORECAST_POLL_INTERVAL_MS);
+      const cached = await aiService.getCachedForecast();
+
+      if (hasForecastData(cached)) {
+        mapForecastData(cached, formatLocalDateKey());
+      }
+
+      if (cached.cache_status !== 'refreshing' && !cached.refresh_in_progress) {
+        return;
+      }
+    }
+  }, [mapForecastData]);
+
+  const refreshForecast = useCallback(async () => {
+    if (forecastRequestRef.current) {
+      return forecastRequestRef.current;
+    }
+
+    setForecastUpdating(true);
+    const request = (async () => {
+      try {
+        const forecast = await aiService.forecastHumidity(720, 24, 0.7, { force: true });
+        if (hasForecastData(forecast)) {
+          mapForecastData(forecast, formatLocalDateKey());
+        }
+
+        if (forecast.cache_status === 'refreshing' || forecast.refresh_in_progress) {
+          await pollForecastCache();
+        }
+      } catch {
+        const cached = await aiService.getCachedForecast().catch(() => null);
+        if (hasForecastData(cached)) {
+          mapForecastData(cached as HumidityForecastResult, formatLocalDateKey());
+        }
+      } finally {
+        setForecastUpdating(false);
+        forecastRequestRef.current = null;
+      }
+    })();
+
+    forecastRequestRef.current = request;
+    return request;
+  }, [mapForecastData, pollForecastCache]);
 
   const fetchAllHistory = useCallback(async () => {
+    const dateKey = formatLocalDateKey();
+    setChartDateKey(dateKey);
     setLoading(true);
     try {
-      const results: Record<string, { time: string; value: number }[]> = {};
-      for (const config of CHART_CONFIGS) {
-        try {
-          const { data } = await api.get(`/sensors/history/${config.type}?hours=24`);
-          results[config.type] = (data as SensorHistoryPoint[]).map((d) => ({
-            time: d.recorded_at,
-            value: d.value,
-          }));
-        } catch {
-          results[config.type] = [];
-        }
-      }
-      setHistoryData(results);
+      const [historyEntries, forecast] = await Promise.all([
+        Promise.all(
+          CHART_CONFIGS.map(async (config) => {
+            try {
+              const { data } = await api.get(`/sensors/history/${config.type}?date=${dateKey}`);
+              const points = (data as SensorHistoryPoint[]).map((d) => ({
+                time: d.recorded_at,
+                value: Number(d.value),
+              }));
 
-      // Fetch cached forecast (fast, no inference)
-      try {
-        const forecast = await aiService.getCachedForecast();
-        mapForecastData(forecast);
-      } catch {
-        setHumidityForecast([]);
-        setHistoricalPredictions([]);
-        setHistoricalActuals([]);
+              return [config.type, prepareDaySeries(points, dateKey)] as const;
+            } catch {
+              return [config.type, []] as const;
+            }
+          }),
+        ),
+        aiService.getCachedForecast().catch(() => null),
+      ]);
+
+      setHistoryData(Object.fromEntries(historyEntries));
+
+      if (hasForecastData(forecast)) {
+        mapForecastData(forecast as HumidityForecastResult, dateKey);
+      } else if (!initialForecastRefreshRef.current) {
+        initialForecastRefreshRef.current = true;
+        void refreshForecast();
       }
     } finally {
       setLoading(false);
     }
-  }, [mapForecastData]);
-
-  const updateForecast = useCallback(async () => {
-    setForecastUpdating(true);
-    try {
-      const forecast = await aiService.forecastHumidity(720, 24, 0.7);
-      mapForecastData(forecast);
-    } catch {
-      setHumidityForecast([]);
-      setHistoricalPredictions([]);
-      setHistoricalActuals([]);
-    } finally {
-      setForecastUpdating(false);
-    }
-  }, [mapForecastData]);
+  }, [mapForecastData, refreshForecast]);
 
   useEffect(() => {
     fetchAllHistory();
-    // Auto-refresh history every 5 minutes (cached forecast, no inference)
-    const interval = setInterval(fetchAllHistory, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    const interval = window.setInterval(fetchAllHistory, 5 * 60 * 1000);
+    return () => window.clearInterval(interval);
   }, [fetchAllHistory]);
+
+  useEffect(() => {
+    const currentConfig = CHART_CONFIGS[activeIndex];
+    onActiveTypeChange?.(currentConfig.type);
+  }, [activeIndex, onActiveTypeChange]);
+
+  useEffect(() => {
+    if (!latestSensorEvent?.type) return;
+
+    const eventTime = latestSensorEvent.recorded_at || latestSensorEvent.timestamp;
+    const value = Number(latestSensorEvent.value);
+    if (!eventTime || Number.isNaN(value)) return;
+
+    const todayKey = formatLocalDateKey();
+    if (todayKey !== chartDateKey) {
+      void fetchAllHistory();
+      return;
+    }
+
+    if (getLocalDateKey(eventTime) !== chartDateKey) return;
+
+    setHistoryData((prev) => {
+      const existing = prev[latestSensorEvent.type] || [];
+      const updated = prepareDaySeries([
+        ...existing,
+        { time: eventTime, value },
+      ], chartDateKey);
+
+      return {
+        ...prev,
+        [latestSensorEvent.type]: updated,
+      };
+    });
+  }, [chartDateKey, fetchAllHistory, latestSensorEvent]);
 
   const goNext = () => {
     setActiveIndex((prev) => (prev + 1) % CHART_CONFIGS.length);
@@ -149,10 +255,8 @@ const ChartCarousel = () => {
 
   const currentConfig = CHART_CONFIGS[activeIndex];
   const currentData = historyData[currentConfig.type] || [];
-  const humidityData = currentConfig.type === 'humidity' && historicalActuals.length > 0
-    ? historicalActuals
-    : currentData;
-  const showChart = humidityData.length > 0 || humidityForecast.length > 0;
+  const isHumidityChart = currentConfig.type === 'humidity';
+  const showChart = currentData.length > 0 || (isHumidityChart && humidityForecast.length > 0);
 
   return (
     <div className="chart-carousel">
@@ -167,10 +271,10 @@ const ChartCarousel = () => {
           </span>
         </div>
         <div className="carousel-nav">
-          {currentConfig.type === 'humidity' && (
+          {isHumidityChart && (
             <button
               className="carousel-btn forecast-update-btn"
-              onClick={updateForecast}
+              onClick={refreshForecast}
               disabled={forecastUpdating}
               title={t('dashboard.updateForecast') || 'Cập nhật dự báo'}
             >
@@ -219,15 +323,14 @@ const ChartCarousel = () => {
         ) : (
           <>
             <EnvironmentChart
-              data={currentConfig.type === 'humidity' ? downsample(lastDays(humidityData, 14)) : humidityData}
-              historicalPredictions={currentConfig.type === 'humidity' ? downsample(lastDays(historicalPredictions, 14)) : []}
-              forecastData={currentConfig.type === 'humidity' ? humidityForecast : []}
+              data={prepareDaySeries(currentData, chartDateKey)}
+              forecastData={isHumidityChart ? humidityForecast : []}
               label={t(currentConfig.labelKey)}
               unit={currentConfig.unit}
               color={currentConfig.color}
-              showDateLabels={currentConfig.type === 'humidity'}
+              isHumidityChart={isHumidityChart}
             />
-            {forecastUpdating && currentConfig.type === 'humidity' && (
+            {forecastUpdating && isHumidityChart && (
               <div className="forecast-updating-bar">
                 <div className="carousel-spinner" />
                 <span>{t('dashboard.updatingForecast') || 'Đang cập nhật dự báo...'}</span>

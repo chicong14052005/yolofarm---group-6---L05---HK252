@@ -354,36 +354,36 @@ const SchedulePage = () => {
 
         {/* Calendar Grid */}
         <div className="cal-outer card">
-          {/* Day headers — outside the scroll container so they never scroll */}
-          {viewMode === 'week' && (
-            <div className="cal-day-headers">
-              <div className="cal-time-gutter-header"></div>
-              {weekDays.map((d, i) => {
-                const isToday = d.toDateString() === today.toDateString();
-                // i: 0=Mon → dayLabels index: Mon=1
-                const labelIdx = d.getDay(); // 0=Sun..6=Sat
-                return (
-                  <div key={i} className={`cal-day-header ${isToday ? 'today' : ''}`}>
-                    <span className="cal-day-name">{dayLabels[labelIdx]}</span>
-                    <span className={`cal-day-num ${isToday ? 'today-num' : ''}`}>{d.getDate()}</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {viewMode === 'day' && (
-            <div className="cal-day-headers">
-              <div className="cal-time-gutter-header"></div>
-              <div className={`cal-day-header today`}>
-                <span className="cal-day-name">{dayLabels[currentDate.getDay()]}</span>
-                <span className="cal-day-num today-num">{currentDate.getDate()}</span>
-              </div>
-            </div>
-          )}
-
           {/* Scrollable body — only this part scrolls */}
           <div className="cal-scroll" ref={calContainerRef}>
+            {/* Day headers — inside the scroll container so they align perfectly and stay sticky at top */}
+            {viewMode === 'week' && (
+              <div className="cal-day-headers">
+                <div className="cal-time-gutter-header"></div>
+                {weekDays.map((d, i) => {
+                  const isToday = d.toDateString() === today.toDateString();
+                  // i: 0=Mon → dayLabels index: Mon=1
+                  const labelIdx = d.getDay(); // 0=Sun..6=Sat
+                  return (
+                    <div key={i} className={`cal-day-header ${isToday ? 'today' : ''}`}>
+                      <span className="cal-day-name">{dayLabels[labelIdx]}</span>
+                      <span className={`cal-day-num ${isToday ? 'today-num' : ''}`}>{d.getDate()}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {viewMode === 'day' && (
+              <div className="cal-day-headers">
+                <div className="cal-time-gutter-header"></div>
+                <div className={`cal-day-header today`}>
+                  <span className="cal-day-name">{dayLabels[currentDate.getDay()]}</span>
+                  <span className="cal-day-num today-num">{currentDate.getDate()}</span>
+                </div>
+              </div>
+            )}
+
             <div className="cal-body">
               {/* Time gutter */}
               <div className="cal-time-gutter">

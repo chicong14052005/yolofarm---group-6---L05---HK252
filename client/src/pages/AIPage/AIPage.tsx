@@ -4,9 +4,7 @@ import { toast } from 'react-toastify';
 import Sidebar from '../../components/common/Sidebar/Sidebar';
 import { useLanguage } from '../../context/LanguageContext';
 import aiService from '../../services/aiService';
-import type { DiseaseDetectionResult } from '../../types/ai';
 import { HiOutlineUpload, HiOutlineClock } from 'react-icons/hi';
-import aiService from '../../services/aiService';
 import type { DiseaseDetectionData } from '../../types/ai';
 import '../../pages/DashboardPage/DashboardPage.css';
 import './AIPage.css';
@@ -54,8 +52,6 @@ const AIPage = () => {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop, accept: { 'image/*': ['.jpg', '.png', '.jpeg'] }, maxFiles: 1,
   });
-
-  const confidencePercent = result ? Math.round(result.confidence * 100) : 0;
 
   return (
     <div className="layout">

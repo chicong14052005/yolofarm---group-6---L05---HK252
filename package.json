@@ -4,12 +4,16 @@
   "description": "YoloFarm - Smart Agriculture System with AI & IoT",
   "private": true,
   "scripts": {
-    "dev": "concurrently -k -n client,server,api -c blue,green,yellow \"pnpm --filter client run dev\" \"pnpm --filter server run dev\" \"node scripts/start-api.js\"",
+    "dev": "node scripts/dev-prepare.js && concurrently -k -n client,server,api -c blue,green,yellow \"pnpm --filter client run dev\" \"pnpm --filter server run dev\" \"node scripts/start-api.js\"",
+    "dev:prepare": "node scripts/dev-prepare.js",
     "dev:client": "pnpm --filter client run dev",
     "dev:server": "pnpm --filter server run dev",
     "dev:api": "node scripts/start-api.js",
     "install:all": "pnpm install",
-    "build": "pnpm --filter client run build"
+    "build": "pnpm --filter client run build",
+    "docker:up": "docker compose up --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f"
   },
   "keywords": [
     "agriculture",

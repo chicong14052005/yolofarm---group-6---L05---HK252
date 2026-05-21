@@ -13,7 +13,6 @@ const Sidebar = () => {
   const { theme, setTheme } = useTheme();
   const { t, locale, setLocale } = useLanguage();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 740);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -47,11 +46,7 @@ const Sidebar = () => {
     return () => window.removeEventListener('notif-count-changed', fetchUnreadCount);
   }, [fetchUnreadCount]);
 
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 740);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
+
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -65,7 +60,7 @@ const Sidebar = () => {
   }, []);
 
   const handleNavClick = () => {
-    if (isMobile) setMobileOpen(false);
+    setMobileOpen(false);
   };
 
   const handleSwitchLocale = async (newLocale: 'vi' | 'en') => {
@@ -112,15 +107,13 @@ const Sidebar = () => {
 
   return (
     <>
-      {isMobile && (
-        <button className={`sidebar-hamburger ${mobileOpen ? 'open' : ''}`} onClick={() => setMobileOpen(!mobileOpen)}>
-          <span className="material-symbols-outlined">
-            {mobileOpen ? 'close' : 'menu'}
-          </span>
-        </button>
-      )}
+      <button className={`sidebar-hamburger ${mobileOpen ? 'open' : ''}`} onClick={() => setMobileOpen(!mobileOpen)}>
+        <span className="material-symbols-outlined">
+          {mobileOpen ? 'close' : 'menu'}
+        </span>
+      </button>
 
-      {isMobile && <div className={`sidebar-overlay ${mobileOpen ? 'visible' : ''}`} onClick={() => setMobileOpen(false)} />}
+      <div className={`sidebar-overlay ${mobileOpen ? 'visible' : ''}`} onClick={() => setMobileOpen(false)} />
 
       <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
