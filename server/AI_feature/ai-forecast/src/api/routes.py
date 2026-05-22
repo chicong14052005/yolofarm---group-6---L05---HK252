@@ -22,14 +22,10 @@ def local_now_iso() -> str:
     return datetime.now(LOCAL_TZ).replace(tzinfo=None).isoformat(timespec="seconds")
 
 
-def latest_contiguous_sequence(sequences: list, min_points: int):
-    if not sequences:
+def latest_inference_window(df_resampled, min_points: int):
+    if df_resampled.empty or len(df_resampled) < min_points:
         return None
-
-    latest = sequences[-1]
-    if len(latest) >= min_points:
-        return latest
-    return None
+    return df_resampled.tail(min_points).reset_index(drop=True)
 
 
 def limit_recent_points(points: list[dict], max_points: int) -> list[dict]:
@@ -155,7 +151,7 @@ def forecast_humidity(
 
     sequences = split_at_large_gaps(df_resampled, interval_min)
     min_points = max(10, lookback + 1)
-    inference_df = latest_contiguous_sequence(sequences, min_points)
+    inference_df = latest_inference_window(df_resampled, min_points)
 
     if inference_df is None:
         return ForecastResponse(
@@ -171,10 +167,8 @@ def forecast_humidity(
                 coverage_pct=gap_info["coverage_pct"],
                 n_sequences=len(sequences),
             ),
-            error=f"Latest contiguous humidity segment has fewer than {min_points} points",
+            error=f"Humidity history has fewer than {min_points} usable recent points after resampling",
         )
-
-    lookback = max(1, min(lookback, len(inference_df) // 2))
 
     # Run inference
     result = run_inference(

@@ -147,6 +147,52 @@ const ForecastHistoryModel = {
       latest_generated_at: toApiDateTime(row.latest_generated_at),
     }));
   },
+
+  async getSameDayFutureDailyAverages({ sensorType = 'humidity', startDate, endDate }) {
+    const windowStart = `${startDate} 00:00:00`;
+    const windowEnd = `${endDate} 00:00:00`;
+
+    const [rows] = await db.query(
+      `SELECT
+         DATE(fh.target_timestamp) AS date,
+         ROUND(AVG(fh.predicted_value), 2) AS predicted_avg,
+         COUNT(*) AS predicted_count,
+         MIN(fh.target_timestamp) AS first_prediction_at,
+         MAX(fh.target_timestamp) AS last_prediction_at,
+         MAX(fh.generated_at) AS latest_generated_at
+       FROM forecast_history fh
+       INNER JOIN (
+         SELECT DATE(generated_at) AS forecast_date, MAX(generated_at) AS latest_generated_at
+         FROM forecast_history
+         WHERE sensor_type = ?
+           AND point_type = 'future'
+           AND generated_at >= ?
+           AND generated_at < ?
+           AND predicted_value IS NOT NULL
+         GROUP BY DATE(generated_at)
+       ) latest
+         ON DATE(fh.generated_at) = latest.forecast_date
+        AND fh.generated_at = latest.latest_generated_at
+       WHERE fh.sensor_type = ?
+         AND fh.point_type = 'future'
+         AND fh.predicted_value IS NOT NULL
+         AND fh.generated_at >= ?
+         AND fh.generated_at < ?
+         AND fh.target_timestamp >= fh.generated_at
+         AND DATE(fh.target_timestamp) = DATE(fh.generated_at)
+       GROUP BY DATE(fh.target_timestamp)`,
+      [sensorType, windowStart, windowEnd, sensorType, windowStart, windowEnd]
+    );
+
+    return rows.map((row) => ({
+      date: toApiDateTime(row.date)?.slice(0, 10) || String(row.date).slice(0, 10),
+      predicted_avg: toNullableNumber(row.predicted_avg),
+      predicted_count: Number(row.predicted_count || 0),
+      first_prediction_at: toApiDateTime(row.first_prediction_at),
+      last_prediction_at: toApiDateTime(row.last_prediction_at),
+      latest_generated_at: toApiDateTime(row.latest_generated_at),
+    }));
+  },
 };
 
 module.exports = ForecastHistoryModel;

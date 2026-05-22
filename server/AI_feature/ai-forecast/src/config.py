@@ -42,7 +42,7 @@ class Settings:
     early_stopping_patience: int = int(os.getenv("EARLY_STOPPING_PATIENCE", "10"))
 
     # Inference
-    mc_dropout_samples: int = int(os.getenv("MC_DROPOUT_SAMPLES", "50"))
+    mc_dropout_samples: int = int(os.getenv("MC_DROPOUT_SAMPLES", "10"))
     horizon_hours_default: int = int(os.getenv("HORIZON_HOURS_DEFAULT", "24"))
     history_hours_default: int = int(os.getenv("HISTORY_HOURS_DEFAULT", "720"))
     forecast_historical_points_max: int = int(os.getenv("FORECAST_HISTORICAL_POINTS_MAX", "300"))

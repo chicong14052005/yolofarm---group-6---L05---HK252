@@ -73,7 +73,7 @@ const getWeeklyMissingReason = ({ actualAvg, predictedAvg, hasHistory }) => {
   if (predictedAvg !== null) return null;
   if (!hasHistory) return 'no_forecast_history';
   if (actualAvg === null) return 'no_actual_data';
-  return 'no_historical_prediction_for_day';
+  return 'no_forecast_prediction_for_day';
 };
 
 const getSettingNumber = async (key, fallback) => {
@@ -288,23 +288,29 @@ const aiForecastService = {
       actualRows.map((row) => [toDateKey(row.date), roundNullable(row.actual_avg)])
     );
 
-    const historyRows = await ForecastHistoryModel.getHistoricalDailyAverages({
+    const forecastRows = await ForecastHistoryModel.getSameDayFutureDailyAverages({
       sensorType: 'humidity',
       startDate,
       endDate,
     });
     const cached = await this.getCachedForecast({ sensor_type: 'humidity' }).catch(() => null);
     const predictedByDate = new Map(
-      historyRows.map((row) => [toDateKey(row.date), roundNullable(row.predicted_avg)])
+      forecastRows.map((row) => [toDateKey(row.date), roundNullable(row.predicted_avg)])
     );
     const predictedCountByDate = new Map(
-      historyRows.map((row) => [toDateKey(row.date), Number(row.predicted_count || 0)])
+      forecastRows.map((row) => [toDateKey(row.date), Number(row.predicted_count || 0)])
     );
-    const historicalPredictionCount = historyRows.reduce(
+    const firstPredictionByDate = new Map(
+      forecastRows.map((row) => [toDateKey(row.date), row.first_prediction_at || null])
+    );
+    const lastPredictionByDate = new Map(
+      forecastRows.map((row) => [toDateKey(row.date), row.last_prediction_at || null])
+    );
+    const forecastPredictionCount = forecastRows.reduce(
       (total, row) => total + Number(row.predicted_count || 0),
       0
     );
-    const latestHistoryGeneratedAt = historyRows
+    const latestForecastGeneratedAt = forecastRows
       .map((row) => row.latest_generated_at)
       .filter(Boolean)
       .sort()
@@ -329,19 +335,23 @@ const aiForecastService = {
         missing_reason: getWeeklyMissingReason({
           actualAvg,
           predictedAvg,
-          hasHistory: historicalPredictionCount > 0,
+          hasHistory: forecastPredictionCount > 0,
         }),
         prediction_count: predictedCountByDate.get(date) || 0,
+        first_prediction_at: firstPredictionByDate.get(date) || null,
+        last_prediction_at: lastPredictionByDate.get(date) || null,
       };
     });
 
     return {
       sensor_type: 'humidity',
       days: normalizedDays,
-      prediction_source: 'historical_backtest',
-      historical_prediction_count: historicalPredictionCount,
+      prediction_source: 'same_day_future_forecast',
+      forecast_prediction_count: forecastPredictionCount,
+      historical_prediction_count: forecastPredictionCount,
       cache_generated_at: cached?.generated_at || null,
-      history_generated_at: latestHistoryGeneratedAt,
+      forecast_generated_at: latestForecastGeneratedAt,
+      history_generated_at: latestForecastGeneratedAt,
       rows,
     };
   },

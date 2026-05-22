@@ -60,16 +60,20 @@ export interface HumidityWeeklySummaryRow {
   predicted_avg: number | null;
   variance: number | null;
   status: 'low' | 'optimal' | 'high' | 'missing';
-  missing_reason?: 'no_forecast_cache' | 'no_forecast_history' | 'no_historical_prediction' | 'no_actual_data' | 'no_historical_prediction_for_day' | null;
+  missing_reason?: 'no_forecast_cache' | 'no_forecast_history' | 'no_historical_prediction' | 'no_actual_data' | 'no_historical_prediction_for_day' | 'no_forecast_prediction_for_day' | null;
   prediction_count?: number;
+  first_prediction_at?: string | null;
+  last_prediction_at?: string | null;
 }
 
 export interface HumidityWeeklySummaryResult {
   sensor_type: 'humidity';
   days: number;
-  prediction_source: 'historical_backtest';
+  prediction_source: 'historical_backtest' | 'same_day_future_forecast';
   historical_prediction_count: number;
+  forecast_prediction_count?: number;
   cache_generated_at: string | null;
+  forecast_generated_at?: string | null;
   history_generated_at?: string | null;
   rows: HumidityWeeklySummaryRow[];
 }

@@ -16,6 +16,7 @@ import {
   minutesSinceStartOfDay,
   normalizeYoloFarmTimestamp,
 } from '../../utils/timeUtils';
+import { useLanguage } from '../../context/LanguageContext';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
 
@@ -59,6 +60,7 @@ const EnvironmentChart = ({
   color,
   isHumidityChart = false,
 }: EnvironmentChartProps) => {
+  const { t } = useLanguage();
   const {
     actualPoints,
     forecastPoints,
@@ -91,7 +93,7 @@ const EnvironmentChart = ({
   const chartData = useMemo(() => ({
     datasets: [
       {
-        label: `${label} thực tế (${unit})`,
+        label: `${label} ${t('dashboard.actualSeries')} (${unit})`,
         data: actualPoints,
         borderColor: actualColor,
         backgroundColor: 'transparent',
@@ -108,7 +110,7 @@ const EnvironmentChart = ({
       ...(hasForecast
         ? [
             {
-              label: `${label} dự báo (${unit})`,
+              label: `${label} ${t('dashboard.forecastSeries')} (${unit})`,
               data: forecastPoints,
               borderColor: FORECAST_COLOR,
               backgroundColor: 'transparent',
@@ -121,7 +123,7 @@ const EnvironmentChart = ({
               borderWidth: 2.25,
             },
             {
-              label: 'Upper bound',
+              label: t('dashboard.upperBound'),
               data: upperPoints,
               borderColor: UPPER_BOUND_COLOR,
               backgroundColor: 'transparent',
@@ -132,7 +134,7 @@ const EnvironmentChart = ({
               borderWidth: 1.5,
             },
             {
-              label: 'Confidence interval',
+              label: t('dashboard.confidenceInterval'),
               data: lowerPoints,
               borderColor: 'transparent',
               backgroundColor: CONFIDENCE_FILL,
@@ -150,6 +152,7 @@ const EnvironmentChart = ({
     hasForecast,
     label,
     lowerPoints,
+    t,
     unit,
     upperPoints,
   ]);

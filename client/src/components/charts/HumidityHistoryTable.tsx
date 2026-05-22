@@ -18,6 +18,7 @@ const MISSING_REASON_KEYS: Record<NonNullable<HumidityWeeklySummaryRow['missing_
   no_historical_prediction: 'dashboard.missingNoHistoricalPrediction',
   no_actual_data: 'dashboard.missingNoActualData',
   no_historical_prediction_for_day: 'dashboard.missingNoHistoricalPredictionForDay',
+  no_forecast_prediction_for_day: 'dashboard.missingNoForecastPredictionForDay',
 };
 
 const formatPercent = (value: number | null) => (
@@ -79,7 +80,7 @@ const HumidityHistoryTable = () => {
     const headers = [
       'Date',
       'Actual Humidity (%)',
-      'Backtest Predicted Humidity (%)',
+      'Predicted Humidity (%)',
       'Variance',
       'Status',
       'Missing reason',
