@@ -1,3 +1,25 @@
+% !TEX root = ../main.tex
+\newif\ifprismredirect
+\ifdefined\prismmain
+\else
+  \ifnum\pdfstrcmp{\jobname}{preamp}=0
+    \prismredirecttrue
+  \fi
+\fi
+\ifprismredirect
+  \makeatletter
+  \def\prismpreambleaction{%
+    \def\prismmain{}%
+    \def\input@path{{../}}%
+    \makeatother
+    \input{main.tex}%
+    \endinput
+  }%
+\else
+  \let\prismpreambleaction\relax
+\fi
+\prismpreambleaction
+\RequirePackage{fix-cm}
 \documentclass[a4paper]{article}
 %\usepackage{vntex}
 \usepackage[utf8]{inputenc}
@@ -41,6 +63,7 @@
 \usepackage[lined,boxed,commentsnumbered]{algorithm2e}
 \usepackage{color}
 \usepackage{graphicx}							% Standard graphics package
+\graphicspath{{./}{../}}
 \usepackage{array}
 \usepackage{tabularx, caption}
 \usepackage{multirow}
@@ -56,7 +79,7 @@
 \usetikzlibrary{calc}
 \usepackage{eso-pic,xcolor}
 %normalsize\usepackage[font=small, labelfont=bf, labelsep=colon]{caption}
-\usetikzlibrary{arrows,snakes,backgrounds}
+\usetikzlibrary{arrows,decorations.pathmorphing,decorations.pathreplacing,decorations.shapes,backgrounds}
 
 %\usepackage{pstcol} % PSTricks with the standard colocaptionr package
 \usepackage[normalem]{ulem}
@@ -97,20 +120,20 @@
 \fancyhead[L]{
 	\begin{tabular}{rl}
 		\begin{picture}(25,15)(0,0)
-			\put(0,-8){\includegraphics[width=8mm, height=8mm]{./Pictures/hcmut.png}}
+			\put(0,-8){\includegraphics[width=10mm, height=8mm]{./Pictures/hcmut.png}}
 			%\put(0,-8){\epsfig{width=10mm,figure=hcmut.eps}}
 		\end{picture}&
 		%\includegraphics[width=8mm, height=8mm]{hcmut.png} & %
 		\begin{tabular}{l}
 			\textbf{\bf \ttfamily Trường Đại học Bách khoa -- ĐHQG-HCM}\\
 			\textbf{\bf \ttfamily Khoa Khoa học và Kỹ thuật Máy tính}
-		\end{tabular} 	
+		\end{tabular}
 	\end{tabular}
 }
 \fancyhead[R]{
 	\begin{tabular}{l}
 		\tiny \bf \\
-		\tiny \bf 
+		\tiny \bf
 \end{tabular}  }
 \fancyfoot{} % clear all footer fields
 \fancyfoot[L]{\footnotesize \ttfamily Báo cáo Đồ án Đa ngành -- CO$3107$ \\ Năm học 2025 -- 2026}
@@ -121,12 +144,12 @@
 \setcounter{secnumdepth}{4}
 \setcounter{tocdepth}{3}
 \makeatletter
-\newcounter {subsubsubsection}[subsubsection]
+\newcounter{subsubsubsection}[subsubsection]
 \renewcommand\thesection{\Roman{section}}
 \renewcommand{\@seccntformat}[1]{\csname the#1\endcsname.\hspace{0.35cm}}
 \renewcommand{\numberline}[1]{#1\hspace{0.8em}}
 \renewcommand\thesubsection{\arabic{subsection}}
-\renewcommand\thesubsubsubsection{\thesubsubsection .\arabic{subsubsubsection}}
+\renewcommand\thesubsubsubsection{\thesubsubsection.\arabic{subsubsubsection}}
 \providecommand{\subsubsubsectionfont}{\normalsize}
 \newcommand{\setsubsubsubsectionfont}[1]{\renewcommand{\subsubsubsectionfont}{#1}}
 \newcommand\subsubsubsection{\@startsection{subsubsubsection}{4}{\z@}%
@@ -135,15 +158,20 @@
 	{\normalfont\subsubsubsectionfont\bfseries}}
 \newcommand*\l@subsubsubsection{\@dottedtocline{3}{7.0em}{3.5em}}
 \newcommand*{\subsubsubsectionmark}[1]{}
+\providecommand*{\toclevel@subsubsubsection}{4}
 \makeatother
 
 \everymath{\color{black}}%make in-line maths symbols blue to read/check easily
 
 \sloppy
-\captionsetup[figure]{labelfont={normalsize,bf},textfont={normalsize,it},aboveskip=5pt,belowskip=5pt}
+\raggedbottom
+\hbadness=10000
+\vbadness=10000
+\hfuzz=2pt
+\captionsetup*[figure]{labelfont={normalsize,bf},textfont={normalsize,it},aboveskip=5pt,belowskip=5pt}
 %space remove between caption, figure, and text
-%\captionsetup[table]{labelfont={small,bf},textfont={small,it},aboveskip=3pt,belowskip=6pt}
-\captionsetup[table]{labelfont={normalsize,bf},textfont={normalsize,it},belowskip=-1pt,aboveskip=7pt}
+%\captionsetup*[table]{labelfont={small,bf},textfont={small,it},aboveskip=3pt,belowskip=6pt}
+\captionsetup*[table]{labelfont={normalsize,bf},textfont={normalsize,it},belowskip=-1pt,aboveskip=7pt}
 %space remove between caption, table, and text
 
 %\floatplacement{figure}{H}%forced here float placement automatically for figures
@@ -163,7 +191,7 @@
 \titleformat{\section}{\LARGE\bfseries}{\thesection}{1em}{}
 \titleformat{\subsection}{\Large\bfseries}{\thesubsection}{1em}{}
 \titleformat{\subsubsection}{\fontsize{14}{16}\selectfont\bfseries}{\thesubsubsection}{1em}{}
-\setsubsubsubsectionfont{\fontsize{13}{14}\selectfont}
+\setsubsubsubsectionfont{\fontsize{12}{14}\selectfont}
 \thesislayout
 
 \newcolumntype{P}[1]{>{\centering\arraybackslash}m{#1}} % m = vertical center
@@ -171,21 +199,21 @@
 	%    language=C,
 	%    aboveskip=6mm,
 	%    belowskip=-6mm,
-	%    backgroundcolor=\color{white},   
+	%    backgroundcolor=\color{white},
 	%    commentstyle=\color{codegreen},
 	%    keywordstyle=\color{blue},
 	%    numberstyle=\tiny\color{codegray},
 	%    stringstyle=\color{codepurple},
 	%    basicstyle=\ttfamily,
-	%    breakatwhitespace=false,         
-	%    breaklines=true,                 
-	%    captionpos=b,                    
-	%    keepspaces=true,                 
-	%    numbers=left,                    
-	%    numbersep=5pt,                  
-	%    showspaces=false,                
+	%    breakatwhitespace=false,
+	%    breaklines=true,
+	%    captionpos=b,
+	%    keepspaces=true,
+	%    numbers=left,
+	%    numbersep=5pt,
+	%    showspaces=false,
 	%    showstringspaces=false,
-	%    showtabs=false,                  
+	%    showtabs=false,
 	%    tabsize=2,
 	%    frame=tb,
 	%    framesep=8pt,
@@ -211,15 +239,15 @@
 	numberstyle=\tiny\color{codegray},
 	stringstyle=\color{codepurple},
 	basicstyle=\ttfamily\normalsize,
-	breakatwhitespace=false,         
-	breaklines=true,                 
-	captionpos=b,                    
-	keepspaces=true,                 
-	numbers=left,                    
-	numbersep=5pt,                  
-	showspaces=false,                
+	breakatwhitespace=false,
+	breaklines=true,
+	captionpos=b,
+	keepspaces=true,
+	numbers=left,
+	numbersep=5pt,
+	showspaces=false,
 	showstringspaces=false,
-	showtabs=false,                  
+	showtabs=false,
 	tabsize=2
 }
 \lstset{style=mystyle}
@@ -302,8 +330,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \usepackage[unicode]{hyperref}
-\hypersetup{urlcolor=blue,linkcolor=black,citecolor=black,colorlinks=true} 
-% \usetikzlibrary{arrows,snakes,backgrounds}
+\hypersetup{urlcolor=blue,linkcolor=black,citecolor=black,colorlinks=true}
+\usepackage{bookmark}
+% \usetikzlibrary{arrows,decorations.pathmorphing,decorations.pathreplacing,decorations.shapes,backgrounds}
 \definecolor{mathblue}{RGB}{0,114,188}
 \definecolor{mGreen}{rgb}{0,0.6,0}
 \definecolor{mGray}{rgb}{0.5,0.5,0.5}
@@ -320,22 +349,22 @@
 	numberstyle=\tiny\color{mGray},
 	stringstyle=\color{mPurple},
 	basicstyle=\ttfamily\footnotesize,
-	breakatwhitespace=true,         
-	breaklines=true,                 
-	captionpos=b,                    
-	keepspaces=true,                 
-	numbers=left,                    
-	numbersep=5pt,                  
-	showspaces=false,                
+	breakatwhitespace=true,
+	breaklines=true,
+	captionpos=b,
+	keepspaces=true,
+	numbers=left,
+	numbersep=5pt,
+	showspaces=false,
 	showstringspaces=false,
-	showtabs=false,                  
+	showtabs=false,
 	tabsize=2,
 	framerule=1pt,
 	framesep=5pt,
 	aboveskip=12pt,   % Custom top margin
 	belowskip=12pt,    % Custom bottom margin
 	xleftmargin=12pt,     % <-- Left margin here
-	framexleftmargin=12pt, 
+	framexleftmargin=12pt,
 	frame=single,
 }
 
@@ -362,15 +391,15 @@
 	numberstyle=\footnotesize\color{mGray},
 	stringstyle=\color{Rstring},
 	basicstyle=\ttfamily\normalsize,
-	breakatwhitespace=true,         
-	breaklines=true,                 
-	captionpos=b,                    
-	keepspaces=true,                 
-	numbers=left,                    
-	numbersep=5pt,                  
-	showspaces=false,                
+	breakatwhitespace=true,
+	breaklines=true,
+	captionpos=b,
+	keepspaces=true,
+	numbers=left,
+	numbersep=5pt,
+	showspaces=false,
 	showstringspaces=false,
-	showtabs=false,                  
+	showtabs=false,
 	tabsize=2,
 	framerule=0.5pt,
 	framesep=5pt,
@@ -389,7 +418,7 @@
 	backgroundcolor=\color{Routback},
 	basicstyle=\ttfamily\small,
 	numbers=none,                 % không đánh số dòng
-	breaklines=true,              
+	breaklines=true,
 	breakatwhitespace=false,
 	showstringspaces=false,
 	frame=single,
@@ -502,7 +531,7 @@
 	keywordstyle=\color{blue}\bfseries,     % keyword xanh dương, in đậm
 	numberstyle=\footnotesize\color{mGray}, % số dòng xám
 	stringstyle=\color{SqlString},          % string đỏ
-	basicstyle=\ttfamily\normalsize, 
+	basicstyle=\ttfamily\normalsize,
 	breakatwhitespace=true,
 	breaklines=true,
 	captionpos=b,
@@ -725,3 +754,10 @@
 	{Ỷ}{{\h Y}}1
 	{Ỹ}{{\~Y}}1
 }
+
+\ifdefined\prismmain
+  \let\prismpreambleaction\endinput
+\else
+  \let\prismpreambleaction\relax
+\fi
+\prismpreambleaction

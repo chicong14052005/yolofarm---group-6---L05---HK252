@@ -4,59 +4,58 @@
 %TODO
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.8\linewidth]{./Pictures/Task_3/usecase.png}
+	\includegraphics[width=0.7\linewidth]{./Pictures/Task_3/usecase.png}
 	\caption{Use-case diagram -- Toàn bộ hệ thống}
 \end{figure}
 \subsubsection{Details (Scenario)}
 %TODO
-bsubsub{Truy cập hệ thống}
+\subsubsubsection{Truy cập hệ thống}
 \setlist[enumerate]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
 \setlist[itemize]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
-\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline 		
+\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline
 	\texttt{Use-case ID} & UC--01\\
 	\hline
 	%%%%%%%%%%%%%%%
 	\texttt{Use-case Name} & Truy cập hệ thống\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Overview} & Xác thực khách truy cập hệ thống và phân quyền người dùng.
+	\texttt{Use-case Overview} & Khách truy cập hệ thống bằng tài khoản nội bộ hoặc Google OAuth; sau khi xác thực thành công, hệ thống cấp quyền theo vai trò hiện có.
 	\\
 	\hline
 	\texttt{Actors} & Guest (Khách)
 	\\
 	\hline
-	\texttt{Preconditions} & Khách truy cập hệ thống thành công và hệ thống hoạt động bình thường.
+	\texttt{Preconditions} & Khách đã mở trang đăng nhập và dịch vụ xác thực hoạt động bình thường.
 	\\
 	\hline
-	\texttt{Trigger} & Khách chọn nút đăng nhập hoặc đăng kí tài khoản.\\
+	\texttt{Trigger} & Khách chọn đăng nhập bằng tài khoản nội bộ hoặc Google.\\
 	\hline
 	\texttt{Basic flow} &
 	\begin{enumerate}
-		\item Khách truy cập hệ thống.
-		\item Khách chọn hình thức đăng nhập (trực tiếp hoặc Google account)
-		\item Nếu chọn đăng nhập trực tiếp, chọn mục ``Đăng nhập''.
-		\item Khách nhập thông tin đăng nhập vào ô tương ứng (tên đăng nhập/ mật khẩu).
-		\item Hệ thống đối chiếu thông tin đăng nhập của khách với dữ liệu được lưu ở database.
-		\item Nếu khớp thông tin, hệ thống sẽ phân quyền cho khách là người dùng hoặc là admin.
-		\item Chuyển người đó tới giao diện tương ứng với vai trò đã phân (user/ admin).
+		\item Khách truy cập trang đăng nhập.
+		\item Khách chọn một trong hai cách đăng nhập: nhập tên đăng nhập/mật khẩu hoặc đăng nhập bằng Google.
+		\item Nếu đăng nhập nội bộ, khách nhập thông tin tài khoản và gửi biểu mẫu.
+		\item Nếu đăng nhập Google, hệ thống nhận thông tin xác thực từ Google và gửi về server để kiểm tra.
+		\item Hệ thống xác thực tài khoản, kiểm tra trạng thái người dùng và lấy vai trò hiện tại.
+		\item Nếu hợp lệ, hệ thống tạo phiên đăng nhập và nạp giao diện phù hợp với vai trò user hoặc admin.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Post conditions} & 
-	Người dùng/ admin truy cập được hệ thống với giao diện tương ứng.
+	\texttt{Post conditions} &
+	Người dùng truy cập được hệ thống với quyền phù hợp với vai trò hiện tại.
 	\\
 	\hline
-	\texttt{Alterative flow} & 
+	\texttt{Alternative flow} &
 	\begin{enumerate}[label = A\arabic*.]
-		\item Ở bước 3, nếu chọn đăng nhập theo Google account thì hệ thống chuyển hướng người dùng đến trang xác thực của google và Google Oauth sẽ xác thực tài khoản.
-		\item Ở bước 3, nếu chọn đăng nhập trực tiếp mà chưa có tài khoản thì khách chọn mục ``đăng kí'' để điền thông tin người dùng, tên đăng nhập và mật khẩu.
+		\item Ở bước 2, nếu khách chưa có tài khoản nội bộ thì chuyển sang biểu mẫu đăng ký để tạo tài khoản mới.
+		\item Ở bước 5, nếu tài khoản đã liên kết Google thì hệ thống đăng nhập bằng cùng hồ sơ người dùng hiện có.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Exception flow} & 
+	\texttt{Exception flow} &
 	\begin{enumerate}[label = E\arabic*:]
-		\item Ở bước 6, nếu thông tin không khớp thì hệ thống báo lỗi ``tài khoản không đúng tên đăng nhập hoặc mật khẩu'' và khách phải nhập lại thông tin đăng nhập.
-		\item Ở bước 7, nếu thông tin đăng nhập không khớp thì vẫn giữ nguyên màn hình đăng nhập.
+		\item Ở bước 5, nếu tên đăng nhập/mật khẩu không đúng hoặc xác thực Google thất bại thì hệ thống hiển thị lỗi và giữ nguyên màn hình đăng nhập.
+		\item Ở bước 5, nếu tài khoản bị chặn thì hệ thống từ chối đăng nhập và thông báo trạng thái tài khoản.
 	\end{enumerate}
 	\\
 	\hline
@@ -64,53 +63,50 @@ bsubsub{Truy cập hệ thống}
 	\hline
 	\texttt{Extension points} & Không có.\\
 	\hline
-	
-	\caption{\label{table2}Đặc tả cho Use-case dự đoán độ ẩm}
+
+	\caption{\label{table2}Đặc tả cho Use-case Truy cập hệ thống}
 \end{longtable}
-\subsubsubsection{Dự đoán độ ẩm}
+\subsubsubsection{Dự báo độ ẩm không khí}
 \setlist[enumerate]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
 \setlist[itemize]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
-\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline 		
+\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline
 	\texttt{Use-case ID} & UC--02\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Name} & Dự đoán độ ẩm\\
+	\texttt{Use-case Name} & Dự báo độ ẩm không khí\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Overview} & Hệ thống dự đoán độ ẩm đất dựa trên dữ liệu từ cảm biến độ ẩm đất và cảm biến nhiệt độ -- độ ẩm DHT20
+	\texttt{Use-case Overview} & Hệ thống phân tích dữ liệu môi trường hiện có để dự đoán độ ẩm không khí trong ngắn hạn và hiển thị kết quả trên dashboard web của YoloFarm, kèm phần tổng hợp theo tuần.
 	\\
 	\hline
 	\texttt{Actors} & User
 	\\
 	\hline
-	\texttt{Preconditions} & Hệ thống đã kết nối Internet và cảm biến hoạt động bình thường.
+	\texttt{Preconditions} & Hệ thống đã có dữ liệu môi trường và dịch vụ dự báo hoạt động bình thường.
 	\\
 	\hline
-	\texttt{Trigger} & Người dùng chọn chức năng dự đoán độ ẩm trên dashboard\\
+	\texttt{Trigger} & Người dùng mở khu vực dự báo độ ẩm trên dashboard web của YoloFarm.\\
 	\hline
 	\texttt{Basic flow} &
 	\begin{enumerate}
-		\item Người dùng truy cập dashboard.
-		\item Người dùng chọn chức năng ``Dự đoán độ ẩm''.
-		\item Hệ thống thu thập dữ liệu từ cảm biến độ ẩm đất.
-		\item Hệ thống thu thập dữ liệu nhiệt độ và độ ẩm không khí từ cảm biến DHT20.
-		\item Hệ thống gửi dữ liệu đến server xử lý.
-		\item Server phân tích dữ liệu và thực hiện dự đoán độ ẩm đất.
-		\item Server gửi kết quả dự đoán về hệ thống.
-		\item Hệ thống hiển thị kết quả dự đoán trên dashboard.
+		\item Người dùng truy cập dashboard web của YoloFarm.
+		\item Hệ thống tải dữ liệu lịch sử và kết quả dự báo độ ẩm không khí gần nhất.
+		\item Server AI xử lý chuỗi dữ liệu và tạo các giá trị dự đoán cho các mốc thời gian kế tiếp.
+		\item Hệ thống nhận dữ liệu dự đoán và phần tóm tắt theo tuần.
+		\item Dashboard web hiển thị biểu đồ, các giá trị dự đoán ngắn hạn và nội dung tổng hợp tuần.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Post conditions} & 
-	Hệ thống hiển thị kết quả dự đoán độ ẩm
+	\texttt{Post conditions} &
+	Hệ thống hiển thị kết quả dự báo độ ẩm không khí cho người dùng.
 	\\
 	\hline
-	\texttt{Alterative flow} & Tại bước 1 nếu hệ thống được cấu hình dự đoán tự động theo chu kỳ thì hệ thống tự động thu thập dữ liệu và thực hiện các bước 3 → 8 mà không cần người dùng kích hoạt.\\
+	\texttt{Alternative flow} & Tại bước 5, người dùng có thể xem thêm phần tổng hợp theo tuần để theo dõi xu hướng độ ẩm không khí.\\
 	\hline
-	\texttt{Exception flow} & 
+	\texttt{Exception flow} &
 	\begin{enumerate}[label = E\arabic*:]
-		\item Tại bước 3 nếu cảm biến độ ẩm đất không gửi dữ liệu thì hệ thống hiển thị thông báo lỗi và dừng quá trình dự đoán.
-		\item Tại bước 5 nếu hệ thống không kết nối được với server thì quá trình xử lý dữ liệu bị hủy và hệ thống hiển thị thông báo lỗi.
+		\item Tại bước 2, nếu dữ liệu chưa sẵn sàng thì hệ thống thông báo chưa thể tạo dự báo.
+		\item Tại bước 3, nếu dịch vụ dự báo không phản hồi thì giao diện không thể cập nhật đầy đủ kết quả và hiển thị thông báo lỗi.
 	\end{enumerate}
 	\\
 	\hline
@@ -118,59 +114,57 @@ bsubsub{Truy cập hệ thống}
 	\hline
 	\texttt{Extension points} & Không có.\\
 	\hline
-	
-	\caption{\label{table3}Đặc tả cho Use-case dự đoán độ ẩm}
+
+	\caption{\label{table3}Đặc tả cho Use-case Dự báo độ ẩm không khí}
 \end{longtable}
 \subsubsubsection{Xác định sâu bệnh dựa trên hình ảnh}
 %TODO
 \setlist[enumerate]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
 \setlist[itemize]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
-\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline 		
+\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline
 	\texttt{Use-case ID} & UC--03\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Name} & Use-case Xác định sâu bệnh dựa trên hình ảnh\\
+	\texttt{Use-case Name} & Xác định sâu bệnh dựa trên hình ảnh\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Overview} & Hệ thống nhận hình ảnh cây trồng từ người dùng hoặc camera và sử dụng mô hình AI để phân tích, xác định loại sâu bệnh có thể xuất hiện trên cây.
+	\texttt{Use-case Overview} & Người dùng tải ảnh lá cây lên hệ thống; mô hình AI phân tích ảnh và trả về tên bệnh, mức độ tin cậy và hướng xử lý tương ứng.
 	\\
 	\hline
 	\texttt{Actors} & User
 	\\
 	\hline
-	\texttt{Preconditions} & 
+	\texttt{Preconditions} &
 	\begin{enumerate}[label = \arabic*.]
 		\item Hệ thống đã kết nối Internet.
-		\item Camera hoặc chức năng tải ảnh hoạt động bình thường.
-		\item Server AI sẵn sàng xử lý dữ liệu.
+		\item Chức năng tải ảnh hoạt động bình thường.
+		\item Dịch vụ phân tích ảnh sẵn sàng xử lý dữ liệu.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Trigger} & Người dùng chọn chức năng ``Xác định sâu bệnh'' trên dashboard.\\
+	\texttt{Trigger} & Người dùng tải ảnh lá cây lên trên trang AI.\\
 	\hline
 	\texttt{Basic flow} &
 	\begin{enumerate}
-		\item Người dùng truy cập dashboard.
-		\item Người dùng chọn chức năng ``Xác định sâu bệnh''.
-		\item Người dùng chụp ảnh cây trồng hoặc tải ảnh từ thiết bị lên hệ thống.
-		\item Hệ thống gửi hình ảnh đến server xử lý.
-		\item Server phân tích hình ảnh bằng mô hình AI.
-		\item Server xác định loại sâu bệnh (nếu có).
-		\item Server gửi kết quả dự đoán về hệ thống.
-		\item Hệ thống hiển thị kết quả nhận diện sâu bệnh trên dashboard.
+		\item Người dùng truy cập trang AI.
+		\item Người dùng chọn hoặc kéo thả một ảnh lá cây từ thiết bị và thực hiện tải ảnh lên.
+		\item Hệ thống tiếp nhận ảnh và gửi yêu cầu phân tích.
+		\item Dịch vụ phân tích xử lý ảnh và xác định bệnh phù hợp.
+		\item Hệ thống nhận kết quả gồm tên bệnh, độ tin cậy và hướng xử lý tương ứng.
+		\item Hệ thống hiển thị ảnh đã tải lên cùng kết quả phân tích cho người dùng.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Post conditions} & 
-	Hệ thống hiển thị kết quả nhận diện sâu bệnh và thông tin liên quan cho người dùng.
+	\texttt{Post conditions} &
+	Hệ thống hiển thị kết quả chẩn đoán và hướng xử lý cho ảnh đã tải lên.
 	\\
 	\hline
-	\texttt{Alterative flow} & Tại bước 3 nếu hệ thống được cấu hình sử dụng camera tự động thì camera sẽ định kỳ chụp ảnh và gửi lên server để phân tích mà không cần người dùng thực hiện.\\
+	\texttt{Alternative flow} & Tại bước 5, nếu AI không nhận diện được lớp bệnh phù hợp thì hệ thống trả về trạng thái chưa xác định và khuyến nghị người dùng kiểm tra thêm.\\
 	\hline
-	\texttt{Exception flow} & 
+	\texttt{Exception flow} &
 	\begin{enumerate}[label = E\arabic*:]
-		\item Tại bước 3 nếu người dùng không tải ảnh hoặc camera không hoạt động thì hệ thống hiển thị thông báo lỗi và yêu cầu thử lại.
-		\item Tại bước 4 nếu hệ thống không gửi được dữ liệu đến server thì quá trình phân tích bị hủy và hệ thống hiển thị thông báo lỗi.
+		\item Tại bước 2, nếu người dùng chưa chọn ảnh thì hệ thống yêu cầu tải ảnh lên trước khi phân tích.
+		\item Tại bước 3 hoặc bước 4, nếu ảnh không gửi được tới server hoặc dịch vụ AI lỗi thì hệ thống hiển thị thông báo lỗi và yêu cầu thử lại.
 	\end{enumerate}
 	\\
 	\hline
@@ -178,52 +172,51 @@ bsubsub{Truy cập hệ thống}
 	\hline
 	\texttt{Extension points} & Không có.\\
 	\hline
-	
+
 	\caption{\label{table4}Đặc tả cho Use-case Xác định sâu bệnh dựa trên hình ảnh}
 \end{longtable}
-\subsubsubsection{Xem bảng dữ liệu môi trường}
+\subsubsubsection{Theo dõi dữ liệu môi trường trên dashboard web}
 %TODO
 \setlist[enumerate]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
 \setlist[itemize]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
-\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline 		
+\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline
 	\texttt{Use-case ID} & UC--04\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Name} & Xem bảng dữ liệu môi trường\\
+	\texttt{Use-case Name} & Theo dõi dữ liệu môi trường trên dashboard web\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Overview} & Người dùng xem các thông số môi trường được thu thập từ hệ thống cảm biến như nhiệt độ không khí, độ ẩm không khí và độ ẩm đất.
+	\texttt{Use-case Overview} & Người dùng theo dõi dashboard web của YoloFarm để xem các chỉ số môi trường như nhiệt độ không khí, độ ẩm không khí, độ ẩm đất và cường độ ánh sáng, cùng các biểu đồ lịch sử chính.
 	\\
 	\hline
 	\texttt{Actors} & User
 	\\
 	\hline
-	\texttt{Preconditions} & Hệ thống đang thu thập dữ liệu từ cảm biến
+	\texttt{Preconditions} & Người dùng đã được xác thực để truy cập dashboard web của YoloFarm và hệ thống đang thu thập dữ liệu từ cảm biến.
 	\\
 	\hline
-	\texttt{Trigger} & Người dùng truy cập dashboard\\
+	\texttt{Trigger} & Người dùng truy cập dashboard web của YoloFarm.\\
 	\hline
 	\texttt{Basic flow} &
 	\begin{enumerate}
-		\item Người dùng truy cập dashboard.
-		\item Hệ thống yêu cầu dữ liệu từ các cảm biến.
-		\item Hệ thống nhận dữ liệu nhiệt độ và độ ẩm không khí từ cảm biến.
-		\item Hệ thống nhận dữ liệu từ cảm biến độ ẩm đất.
-		\item Hệ thống xử lý dữ liệu.
-		\item Hệ thống hiển thị dữ liệu trên dashboard dưới dạng bảng hoặc biểu đồ.
+		\item Người dùng truy cập dashboard web của YoloFarm.
+		\item Hệ thống tải dữ liệu môi trường mới nhất và dữ liệu lịch sử liên quan.
+		\item Hệ thống cập nhật các chỉ số nhiệt độ không khí, độ ẩm không khí, độ ẩm đất và cường độ ánh sáng.
+		\item Hệ thống hiển thị các giá trị hiện tại trên dashboard web bằng các thẻ/chỉ báo tổng quan.
+		\item Hệ thống hiển thị các biểu đồ lịch sử tương ứng để người dùng theo dõi xu hướng.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Post conditions} & 
-	Dữ liệu môi trường được hiển thị cho người dùng
+	\texttt{Post conditions} &
+	Dữ liệu môi trường được hiển thị cho người dùng trên dashboard web.
 	\\
 	\hline
-	\texttt{Alterative flow} & Tại bước 6 nếu người dùng chọn xem dữ liệu lịch sử thì hệ thống hiển thị biểu đồ dữ liệu môi trường theo thời gian.\\
+	\texttt{Alternative flow} & Tại bước 5, nếu người dùng chuyển sang phần theo dõi lịch sử thì hệ thống hiển thị các biểu đồ theo thời gian cho nhiệt độ, độ ẩm không khí, độ ẩm đất và cường độ ánh sáng.\\
 	\hline
-	\texttt{Exception flow} & 
+	\texttt{Exception flow} &
 	\begin{enumerate}[label = E\arabic*:]
-		\item Tại bước 3 hoặc bước 4 nếu hệ thống không nhận được dữ liệu từ cảm biến thì dashboard hiển thị trạng thái ``No Data''.
-		\item Tại bước 2 nếu dashboard không kết nối được server thì dữ liệu không thể hiển thị và hệ thống thông báo lỗi.
+		\item Tại bước 2, nếu một phần dữ liệu cảm biến chưa sẵn sàng thì giao diện chỉ hiển thị các chỉ số hiện có và thông báo dữ liệu còn thiếu.
+		\item Tại bước 2, nếu dashboard web không lấy được đầy đủ dữ liệu thì giao diện không thể cập nhật đầy đủ các biểu đồ và hiển thị thông báo tương ứng.
 	\end{enumerate}
 	\\
 	\hline
@@ -231,59 +224,58 @@ bsubsub{Truy cập hệ thống}
 	\hline
 	\texttt{Extension points} & Không có.\\
 	\hline
-	
-	\caption{\label{table5}Đặc tả cho Use-case Xem bảng dữ liệu môi trường}
+
+	\caption{\label{table5}Đặc tả cho Use-case Theo dõi dữ liệu môi trường trên dashboard web}
 \end{longtable}
-\subsubsubsection{Tưới nước thủ công}
+\subsubsubsection{Điều khiển thiết bị thủ công}
 %TODO
 \setlist[enumerate]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
 \setlist[itemize]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
-\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline 		
+\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline
 	\texttt{Use-case ID} & UC--05\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Name} & Use-case Tưới nước thủ công\\
+	\texttt{Use-case Name} & Điều khiển thiết bị thủ công\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Overview} & Người dùng có thể chủ động bật hoặc tắt hệ thống tưới nước thông qua dashboard để tưới cây ngay lập tức.
+	\texttt{Use-case Overview} & Người dùng có thể chủ động bật hoặc tắt các thiết bị trên giao diện điều khiển của ứng dụng web YoloFarm, bao gồm máy bơm nước và đèn LED, để điều khiển hệ thống ngay lập tức.
 	\\
 	\hline
 	\texttt{Actors} & User
 	\\
 	\hline
-	\texttt{Preconditions} & 
+	\texttt{Preconditions} &
 	\begin{enumerate}[label = \arabic*.]
 		\item Hệ thống đang hoạt động bình thường.
-		\item Người dùng đã truy cập dashboard.
-		\item Máy bơm nước được kết nối với hệ thống.
+		\item Người dùng đã truy cập giao diện web YoloFarm.
+		\item Ít nhất một thiết bị điều khiển thủ công (máy bơm nước hoặc đèn LED) được kết nối với hệ thống.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Trigger} & Người dùng chọn chức năng ``Tưới nước thủ công'' trên dashboard.\\
+	\texttt{Trigger} & Người dùng chọn trang/giao diện điều khiển thiết bị trong ứng dụng web YoloFarm.\\
 	\hline
 	\texttt{Basic flow} &
 	\begin{enumerate}
-		\item Người dùng truy cập dashboard.
-		\item Người dùng chọn chức năng ``Tưới nước thủ công''.
-		\item Hệ thống hiển thị nút điều khiển bật/tắt máy bơm.
-		\item Người dùng chọn bật máy bơm.
-		\item Hệ thống gửi tín hiệu điều khiển đến bộ điều khiển máy bơm.
-		\item Máy bơm bắt đầu hoạt động và tưới cây.
-		\item Khi người dùng chọn tắt máy bơm, hệ thống gửi tín hiệu dừng.
-		\item Máy bơm ngừng hoạt động.
+		\item Người dùng truy cập giao diện điều khiển thiết bị trong ứng dụng web YoloFarm.
+		\item Người dùng chọn chức năng điều khiển thiết bị.
+		\item Hệ thống hiển thị giao diện điều khiển và trạng thái bật/tắt của máy bơm nước và đèn LED trên trang điều khiển.
+		\item Người dùng chọn thiết bị cần điều khiển.
+		\item Người dùng chọn bật hoặc tắt thiết bị đã chọn.
+		\item Hệ thống gửi tín hiệu điều khiển đến bộ điều khiển của thiết bị tương ứng.
+		\item Thiết bị được cập nhật trạng thái hoạt động và giao diện web hiển thị trạng thái mới.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Post conditions} & 
-	Máy bơm nước được kích hoạt hoặc tắt theo thao tác của người dùng.
+	\texttt{Post conditions} &
+	Thiết bị được chọn (máy bơm nước hoặc đèn LED) được kích hoạt hoặc tắt theo thao tác của người dùng.
 	\\
 	\hline
-	\texttt{Alterative flow} & Tại bước 4 nếu người dùng đặt thời gian tưới cụ thể thì hệ thống tự động tắt máy bơm sau khi hết thời gian đã chọn.\\
+	\texttt{Alternative flow} & Tại bước 4, nếu người dùng chọn đèn LED thì hệ thống chuyển sang thao tác bật/tắt đèn chiếu sáng và cập nhật trạng thái chiếu sáng tương ứng trên dashboard.\\
 	\hline
-	\texttt{Exception flow} & 
+	\texttt{Exception flow} &
 	\begin{enumerate}[label = E\arabic*:]
-		\item Tại bước 5 nếu hệ thống không gửi được tín hiệu điều khiển đến máy bơm thì hệ thống hiển thị thông báo lỗi.
-		\item Tại bước 6 nếu máy bơm không phản hồi thì hệ thống hiển thị trạng thái lỗi và yêu cầu người dùng kiểm tra thiết bị.
+		\item Tại bước 6 nếu hệ thống không gửi được tín hiệu điều khiển đến thiết bị đã chọn thì hệ thống hiển thị thông báo lỗi.
+		\item Tại bước 7 nếu thiết bị không phản hồi thì hệ thống hiển thị trạng thái lỗi và yêu cầu người dùng kiểm tra thiết bị.
 	\end{enumerate}
 	\\
 	\hline
@@ -291,58 +283,58 @@ bsubsub{Truy cập hệ thống}
 	\hline
 	\texttt{Extension points} & Không có.\\
 	\hline
-	
-	\caption{\label{table6}Đặc tả cho Use-case Tưới nước thủ công}
+
+	\caption{\label{table6}Đặc tả cho Use-case Điều khiển thiết bị thủ công}
 \end{longtable}
 
 \subsubsubsection{Đặt lịch tưới nước tự động}
 %TODO
 \setlist[enumerate]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
 \setlist[itemize]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
-\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline 		
+\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline
 	\texttt{Use-case ID} & UC--06\\
 	\hline
 	%%%%%%%%%%%%%%%
 	\texttt{Use-case Name} & Đặt lịch tưới nước tự động\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Overview} & Người dùng thiết lập lịch tưới nước tự động cho hệ thống. Khi đến thời gian đã đặt, hệ thống sẽ kích hoạt máy bơm để tưới cây.
+	\texttt{Use-case Overview} & Người dùng đã xác thực sử dụng giao diện lịch trên ứng dụng web YoloFarm để tạo, xem và xóa lịch tưới nước của mình; admin chỉ có thêm quyền xử lý lịch của toàn hệ thống khi cần.
 	\\
 	\hline
-	\texttt{Actors} & User
+	\texttt{Actors} & User, Admin
 	\\
 	\hline
-	\texttt{Preconditions} & Hệ thống đã kết nối Internet và máy bơm nước hoạt động bình thường.
+	\texttt{Preconditions} & Người dùng đã đăng nhập vào hệ thống, hệ thống đã kết nối Internet và máy bơm nước hoạt động bình thường.
 	\\
 	\hline
-	\texttt{Trigger} & Người dùng chọn chức năng đặt lịch tưới nước\\
+	\texttt{Trigger} & Người dùng đã xác thực truy cập chức năng lịch tưới trên giao diện web YoloFarm.\\
 	\hline
 	\texttt{Basic flow} &
 	\begin{enumerate}
-		\item Người dùng truy cập dashboard.
+		\item Người dùng truy cập giao diện lịch tưới trên ứng dụng web YoloFarm.
+		\item Hệ thống hiển thị danh sách lịch tưới hiện có của tài khoản hiện tại.
 		\item Người dùng chọn chức năng ``Đặt lịch tưới nước''.
-		\item Người dùng nhập thời gian bắt đầu và thời gian tưới.
-		\item Hệ thống lưu lịch tưới.
-		\item Khi đến thời gian đã đặt, hệ thống kích hoạt máy bơm nước.
-		\item Sau khi hết thời gian tưới, hệ thống tắt máy bơm.
+		\item Người dùng nhập thời gian bắt đầu, thời lượng và các tùy chọn lặp lại nếu có.
+		\item Hệ thống kiểm tra dữ liệu hợp lệ và lưu lịch tưới.
+		\item Hệ thống cập nhật danh sách lịch tưới sắp tới và hiển thị lịch mới.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Post conditions} & 
-	Lịch tưới được lưu và hệ thống thực hiện tưới tự động
+	\texttt{Post conditions} &
+	Danh sách lịch tưới của tài khoản hiện tại được cập nhật và lịch mới sẵn sàng để thực hiện vào thời điểm đã đặt.
 	\\
 	\hline
-	\texttt{Alterative flow} & 
+	\texttt{Alternative flow} &
 	\begin{enumerate}[label = A\arabic*:]
-		\item Tại bước 4 nếu người dùng muốn thay đổi lịch tưới thì hệ thống cho phép chỉnh sửa và lưu lại lịch mới.
-		\item Tại bước 2 nếu người dùng tắt chế độ tưới tự động thì hệ thống không thực hiện lịch tưới đã đặt.
+		\item Tại bước 2, người dùng có thể chọn một lịch đã có để xóa nếu không còn cần thiết.
+		\item Tại bước 2, admin có thể xem và xóa lịch của người dùng khác từ màn hình quản trị lịch.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Exception flow} & 
+	\texttt{Exception flow} &
 	\begin{enumerate}[label = E\arabic*:]
-		\item Tại bước 3 nếu thời gian người dùng nhập không hợp lệ thì hệ thống yêu cầu người dùng nhập lại.
-		\item Tại bước 5 nếu máy bơm không phản hồi thì hệ thống hiển thị thông báo lỗi và không thực hiện tưới nước.
+		\item Tại bước 4, nếu thời gian người dùng nhập không hợp lệ thì hệ thống yêu cầu người dùng nhập lại.
+		\item Tại bước 5 hoặc bước 6, nếu hệ thống không lưu hoặc không tải lại được danh sách lịch thì giao diện hiển thị thông báo lỗi và yêu cầu thử lại.
 	\end{enumerate}
 	\\
 	\hline
@@ -350,56 +342,55 @@ bsubsub{Truy cập hệ thống}
 	\hline
 	\texttt{Extension points} & Không có.\\
 	\hline
-	
+
 	\caption{\label{table7}Đặc tả cho Use-case Đặt lịch tưới nước tự động}
 \end{longtable}
 \subsubsubsection{Nhận và xem thông báo}
 %TODO
 \setlist[enumerate]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
 \setlist[itemize]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
-\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline 		
+\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline
 	\texttt{Use-case ID} & UC--07\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Name} & Use-case Nhận và xem thông báo\\
+	\texttt{Use-case Name} & Nhận và xem thông báo\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Overview} & Hệ thống gửi thông báo đến người dùng khi xảy ra các sự kiện quan trọng như độ ẩm đất thấp, phát hiện sâu bệnh, lỗi cảm biến hoặc hệ thống tưới nước. Hoặc gửi thông báo đến admin về những thay đổi mà admin đã thực hiện.
+	\texttt{Use-case Overview} & Hệ thống tạo thông báo trong web app cho người dùng hoặc admin khi có sự kiện liên quan như thay đổi tài khoản, thay đổi vai trò, trạng thái chặn/mở chặn hoặc các cảnh báo vận hành.
 	\\
 	\hline
 	\texttt{Actors} & User, Admin
 	\\
 	\hline
-	\texttt{Preconditions} & 
+	\texttt{Preconditions} &
 	\begin{enumerate}[label = \arabic*.]
 		\item Hệ thống đã kết nối Internet.
 		\item Người dùng/ admin đã đăng nhập vào hệ thống.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Trigger} & Hệ thống phát hiện một sự kiện cần thông báo.\\
+	\texttt{Trigger} & Hệ thống phát sinh một sự kiện cần hiển thị trong trung tâm thông báo.\\
 	\hline
 	\texttt{Basic flow} &
 	\begin{enumerate}
-		\item Hệ thống phát hiện sự kiện cần thông báo.
-		\item Hệ thống tạo thông báo với nội dung tương ứng.
-		\item Hệ thống gửi thông báo đến dashboard hoặc ứng dụng của người dùng hoặc admin.
+		\item Hệ thống ghi nhận sự kiện và tạo bản ghi thông báo.
+		\item Nếu người dùng đang trực tuyến, hệ thống đẩy thông báo thời gian thực lên giao diện web.
 		\item Người dùng hoặc admin mở mục thông báo trên dashboard.
-		\item Hệ thống hiển thị danh sách các thông báo.
-		\item Người dùng hoặc admin chọn một thông báo để xem chi tiết.
+		\item Hệ thống hiển thị danh sách thông báo tương ứng với quyền hiện tại.
+		\item Người dùng hoặc admin chọn một thông báo để xem chi tiết hoặc đánh dấu đã đọc.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Post conditions} & 
-	Người dùng hoặc admin nhận được và xem nội dung thông báo.
+	\texttt{Post conditions} &
+	Người dùng hoặc admin xem được thông báo trong giao diện web.
 	\\
 	\hline
-	\texttt{Alterative flow} & Tại bước 3 nếu người dùng bật thông báo qua email hoặc ứng dụng di động thì hệ thống gửi thông báo qua các kênh này.\\
+	\texttt{Alternative flow} & Tại bước 4, admin có thể xem toàn bộ thông báo của hệ thống thay vì chỉ thông báo cá nhân.\\
 	\hline
-	\texttt{Exception flow} & 
+	\texttt{Exception flow} &
 	\begin{enumerate}[label = E\arabic*:]
-		\item Tại bước 3 nếu hệ thống không kết nối được Internet thì thông báo sẽ được lưu lại và gửi khi kết nối được khôi phục.
-		\item Tại bước 4 nếu người dùng chưa đăng nhập thì hệ thống yêu cầu đăng nhập trước khi xem thông báo.
+		\item Tại bước 2, nếu kết nối thời gian thực bị gián đoạn thì thông báo vẫn được lưu để hiển thị khi người dùng tải lại danh sách.
+		\item Tại bước 3, nếu người dùng chưa đăng nhập thì hệ thống yêu cầu xác thực trước khi xem thông báo.
 	\end{enumerate}
 	\\
 	\hline
@@ -407,7 +398,7 @@ bsubsub{Truy cập hệ thống}
 	\hline
 	\texttt{Extension points} & Không có.\\
 	\hline
-	
+
 	\caption{\label{table8}Đặc tả cho Use-case Nhận và xem thông báo}
 \end{longtable}
 
@@ -415,20 +406,20 @@ bsubsub{Truy cập hệ thống}
 %TODO
 \setlist[enumerate]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
 \setlist[itemize]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
-\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline 		
+\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline
 	\texttt{Use-case ID} & UC--08\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Name} & Use-case Đăng xuất\\
+	\texttt{Use-case Name} & Đăng xuất\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Overview} & Người dùng/ admin chọn đăng xuất, hệ thống hiển thị lại màn hình đăng nhập và xóa bỏ phân quyền người dùng hiện tại.
+	\texttt{Use-case Overview} & Người dùng hoặc admin chọn đăng xuất, hệ thống kết thúc phiên hiện tại và đưa họ trở lại màn hình đăng nhập.
 	\\
 	\hline
-	\texttt{Actors} & User, admin
+	\texttt{Actors} & User, Admin
 	\\
 	\hline
-	\texttt{Preconditions} & 
+	\texttt{Preconditions} &
 	\begin{enumerate}[label = \arabic*.]
 		\item Người dùng đã đăng nhập vào hệ thống.
 		\item Người dùng, admin đang ở trong hệ thống.
@@ -440,18 +431,18 @@ bsubsub{Truy cập hệ thống}
 	\texttt{Basic flow} &
 	\begin{enumerate}
 		\item Người dùng/ admin nhấn vào nút đăng xuất.
-		\item Hệ thống hiển thị thông báo yêu cầu xác nhận việc đăng xuất.
-		\item Nếu chấp nhận, hệ thống xóa bỏ phân quyền hiện tại và chuyển hướng về giao diện đăng nhập.
+		\item Hệ thống kết thúc phiên đăng nhập hiện tại.
+		\item Hệ thống chuyển hướng về giao diện đăng nhập.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Post conditions} & 
-	Người dùng/ admin bị xóa bỏ phân quyền và trở lại là khách; hệ thống chuyển hướng về màn hình đăng nhập.
+	\texttt{Post conditions} &
+	Phiên đăng nhập hiện tại kết thúc; người dùng/admin trở lại màn hình đăng nhập và cần đăng nhập lại để tiếp tục sử dụng hệ thống.
 	\\
 	\hline
-	\texttt{Alterative flow} & Tại bước 3, nếu không chấp nhận thì hệ thống hủy bỏ việc đăng xuất và vẫn giữ nguyên quyền của người dùng này.\\
+	\texttt{Alternative flow} & Không có.\\
 	\hline
-	\texttt{Exception flow} & 
+	\texttt{Exception flow} &
 	Không có
 	\\
 	\hline
@@ -459,7 +450,7 @@ bsubsub{Truy cập hệ thống}
 	\hline
 	\texttt{Extension points} & Không có.\\
 	\hline
-	
+
 	\caption{\label{table9}Đặc tả cho Use-case Đăng xuất}
 \end{longtable}
 \subsection{Use-case chi tiết cho role Admin}
@@ -476,17 +467,17 @@ bsubsub{Truy cập hệ thống}
 \subsubsubsection{Xem danh sách người dùng}
 \setlist[enumerate]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
 \setlist[itemize]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
-\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline 		
+\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline
 	\texttt{Use-case ID} & UC--B01\\
 	\hline
 	%%%%%%%%%%%%%%%
 	\texttt{Use-case Name} & Xem danh sách người dùng\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Overview} & Admin có thể xem danh sách các người dùng đã đăng kí tài khoản vào hệ thống, ngoài ra còn có thể thêm người dùng, chỉnh sửa thông tin hoặc xóa tài khoản người dùng đã đăng kí trước đó.
+	\texttt{Use-case Overview} & Admin xem danh sách tài khoản hiện có để theo dõi thông tin cơ bản, vai trò và trạng thái hoạt động của từng người dùng.
 	\\
 	\hline
-	\texttt{Actors} & Admin, users
+	\texttt{Actors} & Admin
 	\\
 	\hline
 	\texttt{Preconditions} & Admin đăng nhập thành công vào hệ thống.
@@ -496,81 +487,79 @@ bsubsub{Truy cập hệ thống}
 	\hline
 	\texttt{Basic flow} &
 	\begin{enumerate}
-		\item Admin truy cập vào mục quản lý người dùng.
-		\item Admin chọn các chức năng đặc quyền: thêm, chỉnh sửa thông tin, xóa người dùng.
-		\item Nếu chọn thêm người dùng, admin có thể tạo một tài khoản người dùng mới bằng việc thêm tên đăng nhập, mật khẩu tương ứng. Hệ thống ghi nhận và thêm vào cơ sở dữ liệu.
+		\item Admin truy cập trang quản lý người dùng.
+		\item Hệ thống tải danh sách tài khoản từ server.
+		\item Hệ thống hiển thị họ tên, email, vai trò và trạng thái của từng người dùng.
+		\item Admin tìm kiếm hoặc lọc danh sách để xác định tài khoản cần xem.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Post conditions} & 
-	Hệ thống cập nhật lại thông tin tương ứng mà admin đã thao tác.
+	\texttt{Post conditions} &
+	Admin có được danh sách người dùng hiện tại để tiếp tục thao tác quản trị.
 	\\
 	\hline
-	\texttt{Alterative flow} & 
-	\begin{enumerate}[label = A\arabic*.]
-		\item Ở bước 3, nếu admin chọn chỉnh sửa thông tin người dùng thì admin có thể chỉnh sửa thông tin cá nhân, tên đăng nhập và mật khẩu người dùng.
-		\item Ở bước 3, nếu admin chọn xoá người dùng thì hệ thống sẽ xóa toàn bộ thông tin của người dùng trong cơ sở dữ liệu.
-	\end{enumerate}
-	\\
+	\texttt{Alternative flow} & Tại bước 4, sau khi xác định được tài khoản cần thao tác, admin chọn người dùng đó để chuyển sang use-case UC--B02.\\
 	\hline
-	\texttt{Exception flow} & 
-	\begin{enumerate}[label = E\arabic*:]
-		\item Ở bước 2, nếu admin tìm thông tin của người dùng không tồn tại trong cơ sở dữ liệu hiện tại thì hệ thống báo lỗi.
-	\end{enumerate}
+	\texttt{Exception flow} & Nếu bước 2 thất bại, hệ thống hiển thị lỗi và không tải được danh sách người dùng.\\
 	\\
 	\hline
 	\texttt{Special requirements} & Không có.\\
 	\hline
 	\texttt{Extension points} & Không có.\\
 	\hline
-	
+
 	\caption{\label{table10}Đặc tả cho Use-case Xem danh sách người dùng}
 \end{longtable}
 
-\subsubsubsection{Xem danh sách người dùng}
+\subsubsubsection{Quản lý tài khoản người dùng}
 \setlist[enumerate]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
 \setlist[itemize]{leftmargin=*,topsep=0pt,itemsep=2pt,parsep=0pt}
-\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline 		
+\begin{longtable}{|P{4.8cm}|m{10cm}|}\hline
 	\texttt{Use-case ID} & UC--B02\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Name} & Xem thông tin hệ thống tưới\\
+	\texttt{Use-case Name} & Quản lý tài khoản người dùng\\
 	\hline
 	%%%%%%%%%%%%%%%
-	\texttt{Use-case Overview} & Admin có thể xem và chỉnh sửa các thông số của các thiết bị cũng như cách bố trí các thành phần trong hệ thống.
+	\texttt{Use-case Overview} & Admin cập nhật thông tin người dùng khác, đổi vai trò, chặn/mở chặn tài khoản và xóa tài khoản khi cần.
 	\\
 	\hline
-	\texttt{Actors} & Admin, adafruit và thiết bị
+	\texttt{Actors} & Admin
 	\\
 	\hline
 	\texttt{Preconditions} & Admin đăng nhập thành công vào hệ thống.
 	\\
 	\hline
-	\texttt{Trigger} & Admin truy cập vào mục ``quản lý thiết bị và hệ thống''.\\
+	\texttt{Trigger} & Admin chọn một hành động quản trị trên trang quản lý người dùng.\\
 	\hline
 	\texttt{Basic flow} &
 	\begin{enumerate}
-		\item Admin truy cập vào mục ``quản lý thiết bị và hệ thống''.
-		\item Admin chọn mục xem thông tin hệ thống tưới.
-		\item Hệ thống truy xuất dữ liệu cấu hình thiết bị từ Adafruit và cơ sở dữ liệu.
-		\item Hệ thống hiển thị danh sách các thiết bị trong hệ thống tưới (cảm biến độ ẩm đất, cảm biến DHT20, máy bơm nước) cùng với trạng thái hoạt động và các thông số cấu hình hiện tại.
-		\item Admin xem chi tiết thông tin của từng thiết bị bao gồm: tên thiết bị, trạng thái kết nối, giá trị đọc được, ngưỡng hoạt động và lịch sử hoạt động.
+		\item Admin chọn tài khoản cần quản lý trong danh sách.
+		\item Hệ thống mở chức năng tương ứng: chỉnh sửa thông tin, đổi vai trò, chặn/mở chặn hoặc xóa.
+		\item Admin nhập thay đổi hoặc xác nhận thao tác.
+		\item Hệ thống kiểm tra quyền, lưu thay đổi vào cơ sở dữ liệu và cập nhật lại danh sách.
+		\item Nếu thao tác ảnh hưởng đến người dùng đích, hệ thống tạo thông báo trong web app cho tài khoản đó.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Post conditions} & 
-	Hệ thống cập nhật lại thông tin tương ứng mà admin đã thao tác.
+	\texttt{Post conditions} &
+	Thông tin hoặc trạng thái tài khoản được cập nhật theo thao tác của admin.
 	\\
 	\hline
-	\texttt{Alterative flow} & 
+	\texttt{Alternative flow} &
 	\begin{enumerate}[label = A\arabic*.]
-		\item Ở bước 5, nếu admin chọn chỉnh sửa cấu hình hệ thống tưới thì hệ thống cho phép admin thay đổi các thông số như: ngưỡng độ ẩm kích hoạt tưới, thời gian tưới, tần suất đọc cảm biến. Sau khi chỉnh sửa, hệ thống gửi cấu hình mới đến Adafruit để cập nhật cho thiết bị.
+		\item Ở bước 2, admin có thể đổi vai trò giữa user và admin.
+		\item Ở bước 2, admin có thể chặn hoặc mở chặn tài khoản người dùng.
+		\item Ở bước 2, admin có thể cập nhật tên hiển thị hoặc mật khẩu của người dùng khác.
+		\item Ở bước 2, admin có thể xóa tài khoản người dùng khác.
 	\end{enumerate}
 	\\
 	\hline
-	\texttt{Exception flow} & 
+	\texttt{Exception flow} &
 	\begin{enumerate}[label = E\arabic*:]
-		\item Ở bước 3, nếu hệ thống không kết nối được tới Adafruit thì báo lỗi.
+		\item Nếu tài khoản đích không còn tồn tại thì hệ thống báo lỗi và yêu cầu tải lại danh sách.
+		\item Nếu admin cố tự chặn hoặc tự xóa chính mình thì hệ thống từ chối thao tác.
+		\item Nếu admin đổi mật khẩu cho tài khoản đăng nhập bằng Google thì hệ thống từ chối thao tác.
 	\end{enumerate}
 	\\
 	\hline
@@ -578,6 +567,6 @@ bsubsub{Truy cập hệ thống}
 	\hline
 	\texttt{Extension points} & Không có.\\
 	\hline
-	
-	\caption{\label{table11}Đặc tả cho Use-case Xem thông tin hệ thống tưới}
+
+	\caption{\label{table11}Đặc tả cho Use-case Quản lý tài khoản người dùng}
 \end{longtable}

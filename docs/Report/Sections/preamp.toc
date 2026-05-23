@@ -1,0 +1,67 @@
+\contentsline {section}{List of Figures}{3}{table.caption.2}%
+\contentsline {section}{Danh sách thành viên và nhiệm vụ}{4}{table.caption.2}%
+\contentsline {section}{\numberline {I}Task 1. Thu thập yêu cầu nghiệp vụ -- Requirements}{5}{section.1}%
+\contentsline {subsection}{\numberline {1}Task 1.1. Chi tiết đặc tả của dự án -- Project details specification}{5}{subsection.1.1}%
+\contentsline {subsubsection}{\numberline {1.1}Đặt vấn đề}{5}{subsubsection.1.1.1}%
+\contentsline {subsubsection}{\numberline {1.2}Giải pháp đặt ra}{5}{subsubsection.1.1.2}%
+\contentsline {subsection}{\numberline {2}Các bên liên quan và hệ thống tương tác của YoloFarm}{6}{subsection.1.2}%
+\contentsline {subsubsection}{\numberline {2.1}Người dùng trang trại (User)}{6}{subsubsection.1.2.1}%
+\contentsline {subsubsection}{\numberline {2.2}Quản trị viên (Admin)}{6}{subsubsection.1.2.2}%
+\contentsline {subsubsection}{\numberline {2.3}Hệ thống phần cứng IoT (hệ thống tương tác)}{6}{subsubsection.1.2.3}%
+\contentsline {subsubsection}{\numberline {2.4}Dịch vụ AI (dịch vụ tích hợp)}{7}{subsubsection.1.2.4}%
+\contentsline {section}{\numberline {II}Yêu cầu người dùng}{7}{section.2}%
+\contentsline {subsection}{\numberline {1}Yêu cầu chức năng}{7}{subsection.2.1}%
+\contentsline {subsubsection}{\numberline {1.1}Nhóm chức năng giám sát và đồng bộ dữ liệu}{7}{subsubsection.2.1.1}%
+\contentsline {subsubsection}{\numberline {1.2}Nhóm chức năng điều khiển và tự động hóa}{7}{subsubsection.2.1.2}%
+\contentsline {subsubsection}{\numberline {1.3}Nhóm chức năng tài khoản và quản trị}{8}{subsubsection.2.1.3}%
+\contentsline {subsubsection}{\numberline {1.4}Nhóm chức năng AI và cảnh báo}{8}{subsubsection.2.1.4}%
+\contentsline {subsection}{\numberline {2}Yêu cầu phi chức năng}{8}{subsection.2.2}%
+\contentsline {section}{\numberline {III}Use-cases}{10}{section.3}%
+\contentsline {subsection}{\numberline {1}Use-case -- Toàn bộ hệ thống}{10}{subsection.3.1}%
+\contentsline {subsubsection}{\numberline {1.1}Diagram}{10}{subsubsection.3.1.1}%
+\contentsline {subsubsection}{\numberline {1.2}Details (Scenario)}{10}{subsubsection.3.1.2}%
+\contentsline {subsubsubsection}{\numberline {1.2.1}Truy cập hệ thống}{10}{subsubsubsection.3.1.2.1}%
+\contentsline {subsubsubsection}{\numberline {1.2.2}Dự báo độ ẩm không khí}{12}{subsubsubsection.3.1.2.2}%
+\contentsline {subsubsubsection}{\numberline {1.2.3}Xác định sâu bệnh dựa trên hình ảnh}{13}{subsubsubsection.3.1.2.3}%
+\contentsline {subsubsubsection}{\numberline {1.2.4}Theo dõi dữ liệu môi trường trên dashboard web}{15}{subsubsubsection.3.1.2.4}%
+\contentsline {subsubsubsection}{\numberline {1.2.5}Điều khiển thiết bị thủ công}{16}{subsubsubsection.3.1.2.5}%
+\contentsline {subsubsubsection}{\numberline {1.2.6}Đặt lịch tưới nước tự động}{18}{subsubsubsection.3.1.2.6}%
+\contentsline {subsubsubsection}{\numberline {1.2.7}Nhận và xem thông báo}{19}{subsubsubsection.3.1.2.7}%
+\contentsline {subsubsubsection}{\numberline {1.2.8}Đăng xuất}{21}{subsubsubsection.3.1.2.8}%
+\contentsline {subsection}{\numberline {2}Use-case chi tiết cho role Admin}{22}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {2.1}Diagram}{22}{subsubsection.3.2.1}%
+\contentsline {subsubsection}{\numberline {2.2}Details (Scenario)}{22}{subsubsection.3.2.2}%
+\contentsline {subsubsubsection}{\numberline {2.2.1}Xem danh sách người dùng}{22}{subsubsubsection.3.2.2.1}%
+\contentsline {subsubsubsection}{\numberline {2.2.2}Quản lý tài khoản người dùng}{23}{subsubsubsection.3.2.2.2}%
+\contentsline {section}{\numberline {IV}Adafruit và thiết bị}{25}{section.4}%
+\contentsline {subsection}{\numberline {1}Adafruit}{25}{subsection.4.1}%
+\contentsline {subsubsection}{\numberline {1.1}Adafruit IO}{25}{subsubsection.4.1.1}%
+\contentsline {subsubsection}{\numberline {1.2}Các chức năng chính của Adafruit IO}{25}{subsubsection.4.1.2}%
+\contentsline {subsubsection}{\numberline {1.3}Cách hoạt động của Adafruit IO}{26}{subsubsection.4.1.3}%
+\contentsline {subsection}{\numberline {2}Thiết kế hệ thống và lựa chọn thiết bị}{26}{subsection.4.2}%
+\contentsline {subsection}{\numberline {3}Kết nối phần cứng}{29}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4}Thiết kế dashboard giám sát}{31}{subsection.4.4}%
+\contentsline {section}{\numberline {V}Hiện thực hệ thống}{32}{section.5}%
+\contentsline {subsection}{\numberline {1}Triển khai phần mềm}{32}{subsection.5.1}%
+\contentsline {subsubsection}{\numberline {1.1}Giới thiệu}{32}{subsubsection.5.1.1}%
+\contentsline {subsubsection}{\numberline {1.2}Tổng quan}{36}{subsubsection.5.1.2}%
+\contentsline {subsubsection}{\numberline {1.3}Giao diện đăng kí, đăng nhập}{38}{subsubsection.5.1.3}%
+\contentsline {subsubsubsection}{\numberline {1.3.1}Giao diện đăng kí}{38}{subsubsubsection.5.1.3.1}%
+\contentsline {subsubsubsection}{\numberline {1.3.2}Giao diện đăng nhập}{39}{subsubsubsection.5.1.3.2}%
+\contentsline {subsubsection}{\numberline {1.4}Giao diện phần cài đặt của hệ thống}{40}{subsubsection.5.1.4}%
+\contentsline {subsubsection}{\numberline {1.5}Giao diện Dashboard}{44}{subsubsection.5.1.5}%
+\contentsline {subsubsection}{\numberline {1.6}Giao diện điều khiển}{46}{subsubsection.5.1.6}%
+\contentsline {subsubsection}{\numberline {1.7}Giao diện phần lịch trình}{47}{subsubsection.5.1.7}%
+\contentsline {subsubsection}{\numberline {1.8}Giao diện hệ thống thông báo}{48}{subsubsection.5.1.8}%
+\contentsline {subsection}{\numberline {2}Các tính năng AI của hệ thống}{49}{subsection.5.2}%
+\contentsline {subsubsection}{\numberline {2.1}AI nhận diện sâu bệnh}{49}{subsubsection.5.2.1}%
+\contentsline {subsubsection}{\numberline {2.2}AI dự báo độ ẩm không khí}{52}{subsubsection.5.2.2}%
+\contentsline {section}{\numberline {VI}Mô tả design pattern và Deploy hệ thống}{53}{section.6}%
+\contentsline {subsection}{\numberline {1}Kiến trúc các design pattern được sử dụng}{53}{subsection.6.1}%
+\contentsline {subsection}{\numberline {2}Deploy hệ thống}{55}{subsection.6.2}%
+\contentsline {subsubsection}{\numberline {2.1}Deploy frontend}{56}{subsubsection.6.2.1}%
+\contentsline {subsubsection}{\numberline {2.2}Deploy backend}{56}{subsubsection.6.2.2}%
+\contentsline {subsubsubsection}{\numberline {2.2.1}Phần server}{56}{subsubsubsection.6.2.2.1}%
+\contentsline {subsubsubsection}{\numberline {2.2.2}Phần AI xử lý sâu bệnh}{57}{subsubsubsection.6.2.2.2}%
+\contentsline {subsubsection}{\numberline {2.3}Cơ chế hoạt động}{58}{subsubsection.6.2.3}%
+\contentsline {section}{\numberline {VII}Đường link hệ thống và mã nguồn}{58}{section.7}%

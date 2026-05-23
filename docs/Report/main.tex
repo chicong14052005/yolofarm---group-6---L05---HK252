@@ -1,7 +1,9 @@
+% !TEX root = main.tex
+\def\prismmain{}
 \input{Sections/preamp}
 
 \begin{document}
-	
+	\hypersetup{pageanchor=false}
 	\begin{titlepage}
 		\PageFrameSetup{
 			outer left=1.5cm, outer right=1.5cm, outer top=2.0cm, outer bottom=2.0cm,
@@ -13,64 +15,65 @@
 		\thispagestyle{empty}% tránh số trang/heading đè khung
 		\PageFrameThisPage
 		\begin{center}
-			
+
 			{\Large ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH} \\
 			{\Large TRƯỜNG ĐẠI HỌC BÁCH KHOA} \\
 			\textbf{\Large KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}
 		\end{center}
-		
+
 		\vspace{0.5cm}
-		
+
 		\begin{figure}[h!]
 			\begin{center}
 				\includegraphics[scale=1]{Pictures/hcmut.png}
 			\end{center}
 		\end{figure}
-		
+
 		\vspace{0.2cm}
-		
-		
+
+
 		\begin{center}
 			\textbf{{\LARGE BÁO CÁO ĐỒ ÁN ĐA NGÀNH}} \\[0.5cm]
 			\color{blue}
 			\hrule
-			
+
 			\vspace{0.5cm}
-			
+
 			\textbf{{\LARGE Hệ thống chăm sóc cây trồng thông minh tích hợp trí tuệ nhân tạo -- YOLO FARM}}\\[0.5cm]
-			
+
 			\hrule
-			
+
 			\vspace{.5cm}
-			
-			
+
+
 			\begin{table}[h]
 				\large
 				\centering
-				
+
 				\begin{tabular}{rrrrlr}
-					
+
 					& Giảng viên hướng dẫn:&& & Dương Đức Tín & \\[0.25cm]
 					& Lớp: &&& L05 & \\[0.25cm]
 					& Nhóm: &&& L05\_06 & \\[0.25cm]
-					
+
 					& Sinh viên thực hiện: &&& Cao Vĩnh Phát & 2212497 \\[0.1cm]
 					&                      &&& Hồ Chí Công & 2310370 \\[0.1cm]
 					&                      &&& Vương Minh Khôi & 2311712 \\[0.1cm]
-					&                      &&& Nguyễn Hữu Phát & 2312588 \\[0.1cm]  
+					&                      &&& Nguyễn Hữu Phát & 2312588 \\[0.1cm]
 					&                      &&& Trương Trung Kiên & 2311745 \\[0.1cm]
 					&                      &&& Phạm Hồng Nhân & 2312449 \\
-					
+
 				\end{tabular}
 			\end{table}
-			
-			
+
+
 		\end{center}
-		
-		
+
+
 		\vspace{.6cm}
-		\centering{\fontsize{12}{14}\selectfont {THÀNH PHỐ HỒ CHÍ MINH -- 03/2026}}
+		\centering{\fontsize{12}{14}\selectfont {THÀNH PHỐ HỒ CHÍ MINH -- 05/2026}}
 	\end{titlepage}
+	\hypersetup{pageanchor=true}
 	\newpage
 	\setstretch{1.3}
 	%\include{Sections/foreword}
@@ -81,12 +84,12 @@
 	\newpage
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	%\listoffigures
-	%\addcontentsline{toc}{section}{\listfigurename}
+	\addcontentsline{toc}{section}{\listfigurename}
 	%\listoftables
 	%\addcontentsline{toc}{section}{\listtablename}
 	%\pagebreak
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-	\fontsize{13}{18}
+	\fontsize{12}{18}
 	\selectfont
 	\input{Sections/workload}
 	%\newpage
@@ -96,5 +99,5 @@
 	\input{Sections/Tasks/task4}
 	\input{Sections/Tasks/task5}
 	\input{Sections/Tasks/task6}
-	\input{Sections/Tasks/task7}	
+	\input{Sections/Tasks/task7}
 \end{document}

@@ -1,21 +1,56 @@
 \section{Hiện thực hệ thống}
 \subsection{Triển khai phần mềm}
 \subsubsection{Giới thiệu}
-\indent Nhằm hiện thực một hệ thống có khả năng điều khiển các thiết bị phần cứng từ xa một cách thủ công hoặc tự động qua thiết lập lịch, đồng thời xem số liệu trực tiếp từ các cảm biến và hỗ trợ dự đoán loại bệnh của lá cây, nhóm đã xây dựng ứng dụng web SmartFarm. SmartFarm là hệ thống nông nghiệp thông minh kết hợp sức mạnh của \textbf{Trí tuệ nhân tạo (AI)} và \textbf{Internet vạn vật (IoT)}, cung cấp cho người dùng khả năng giám sát trạng thái môi trường và quản lý thiết bị trang trại từ mọi nơi thông qua một giao diện web trực quan, hiện đại. Hệ thống được triển khai theo mô hình client-server tiên tiến, đảm bảo đồng bộ hóa dữ liệu thời gian thực và tự động hóa các quy trình tưới tiêu, chiếu sáng, mang lại hiệu quả cao nhất cho sản xuất nông nghiệp.
+\indent Nhằm hiện thực một hệ thống có khả năng điều khiển các thiết bị phần cứng từ xa một cách thủ công hoặc tự động qua thiết lập lịch, đồng thời xem số liệu trực tiếp từ các cảm biến, hỗ trợ nhận diện bệnh trên lá cây và dự báo độ ẩm không khí, nhóm đã xây dựng ứng dụng web YoloFarm. YoloFarm là hệ thống nông nghiệp thông minh kết hợp sức mạnh của \textbf{Trí tuệ nhân tạo (AI)} và \textbf{Internet vạn vật (IoT)}, cung cấp cho người dùng khả năng giám sát trạng thái môi trường và quản lý thiết bị trang trại từ mọi nơi thông qua một giao diện web trực quan, hiện đại. Hệ thống được triển khai theo mô hình client-server tiên tiến, đảm bảo đồng bộ hóa dữ liệu thời gian thực và tự động hóa các quy trình tưới tiêu, chiếu sáng, mang lại hiệu quả cao nhất cho sản xuất nông nghiệp.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.75\linewidth]{./Pictures/Task_5/structure.png}
-    \caption{Kiến trúc hệ thống SmartFarm}
+    \caption{Kiến trúc hệ thống YoloFarm}
 \end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{./Pictures/Task_6/architecture/c4-context.png}
+    \caption{Biểu đồ C4 Context của hệ thống YoloFarm}
+\end{figure}
+\indent Ở mức ngữ cảnh, YoloFarm đóng vai trò là nền tảng trung tâm kết nối người dùng web với backend thời gian thực, dịch vụ AI, cơ sở dữ liệu MySQL và hạ tầng Adafruit IO. Cách nhìn này cho thấy rõ các luồng chính của hệ thống: thu nhận dữ liệu cảm biến, đồng bộ trạng thái thiết bị, nhận diện bệnh từ ảnh lá cây và cung cấp dự báo độ ẩm cho dashboard.
 
 \begin{itemize}
     \item \textbf{Frontend}: React 19 + TypeScript + Vite
-    \item \textbf{Backend}: Node.js + Express + Socket.IO
-    \item \textbf{AI API}: FastAPI + TensorFlow/Keras (Python 3.10--3.12)
+    \item \textbf{Backend}: Node.js + Express + Socket.IO + MQTT
+    \item \textbf{AI API}: FastAPI + TensorFlow/Keras + PyTorch (Python 3.10--3.12)
     \item \textbf{Database}: MySQL (mysql2)
     \item \textbf{IoT}: Adafruit IO (MQTT)
-    \item \textbf{AI Model}: EfficientNet --- nhận diện 6 loại bệnh trên lá cà chua
+    \item \textbf{AI Model}: EfficientNet --- nhận diện 6 loại bệnh trên lá cà chua; GRU/PyTorch --- dự báo độ ẩm không khí
 \end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\linewidth]{./Pictures/Task_6/architecture/c4-container.png}
+    \caption{Biểu đồ C4 Container của hệ thống YoloFarm}
+\end{figure}
+\indent Ở mức triển khai, hệ thống được tách thành các container chạy độc lập gồm frontend React, backend Node.js/Express xử lý API, Socket.IO và MQTT, AI API FastAPI phục vụ cả nhận diện bệnh lẫn dự báo độ ẩm, cùng MySQL để lưu dữ liệu người dùng, lịch sử cảm biến, cache và lịch sử dự báo. Việc phân rã như vậy giúp các thành phần dễ mở rộng nhưng vẫn phối hợp chặt chẽ qua HTTP, WebSocket và MQTT.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\linewidth]{./Pictures/Task_6/architecture/c4-frontend-components.png}
+    \caption{Biểu đồ thành phần frontend của hệ thống YoloFarm}
+\end{figure}
+\indent Ở phía frontend, biểu đồ thành phần cho thấy ứng dụng React được tổ chức quanh các trang nghiệp vụ như Dashboard, Control, Schedule, Notification, Settings và AI. Các \textit{context} dùng chung phụ trách xác thực, giao diện và ngôn ngữ; trong khi lớp \textit{service} gom toàn bộ lời gọi REST API, Socket.IO và các tiện ích dùng chung. Cách tách lớp này giúp giao diện tập trung vào trải nghiệm người dùng nhưng vẫn dễ bảo trì khi cần thêm màn hình hoặc thay đổi cách tích hợp backend.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\linewidth]{./Pictures/Task_6/architecture/c4-backend-components.png}
+    \caption{Biểu đồ thành phần backend của hệ thống YoloFarm}
+\end{figure}
+\indent Ở phía backend, Node.js/Express đóng vai trò lớp điều phối trung tâm: nhận yêu cầu từ web app, chuyển tiếp tới controller và service tương ứng, sau đó kết nối xuống MySQL, Adafruit IO/MQTT, Socket.IO và FastAPI. Nhờ cấu trúc route--controller--service--model, các chức năng như xác thực, điều khiển thiết bị, lịch trình, thông báo và gọi AI được tách biệt rõ ràng, giúp việc mở rộng nghiệp vụ không làm rối luồng xử lý thời gian thực của hệ thống.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\linewidth]{./Pictures/Task_6/architecture/module-dependencies.png}
+    \caption{Biểu đồ phụ thuộc mô-đun trong hệ thống YoloFarm}
+\end{figure}
+\indent Biểu đồ phụ thuộc mô-đun làm rõ quan hệ giữa các khối giao diện, dịch vụ truy cập dữ liệu và các tiện ích dùng chung. Những phụ thuộc chính đều hội tụ vào các lớp cơ sở như API client, context, chart component và các service nghiệp vụ; nhờ đó các trang chức năng có thể tái sử dụng cùng một nguồn dữ liệu, cùng quy ước trạng thái và cùng cơ chế thông báo thay vì triển khai lặp lại ở từng màn hình.
 
 \subsubsection{Tổng quan}
     \begin{longtable}{|P{0.35\linewidth}|m{0.58\linewidth}|}
@@ -24,11 +59,13 @@
         \hline
         \textbf{Dashboard} & Giám sát cảm biến thời gian thực (nhiệt độ, độ ẩm, ánh sáng, độ ẩm đất) \\
         \hline
-        \textbf{Điều khiển thiết bị} & Bật/tắt bơm nước, đèn LED, servo từ xa \\
+        \textbf{Điều khiển thiết bị} & Bật/tắt hai bơm nước và đèn LED từ xa, đồng bộ trạng thái hai chiều qua MQTT và Socket.IO \\
         \hline
         \textbf{Lịch trình tưới tự động} & Lịch tưới theo ngày lặp lại, khoảng thời gian bắt đầu/kết thúc \\
         \hline
         \textbf{AI Phát hiện sâu bệnh} & Upload ảnh lá cây $\rightarrow$ mô hình AI nhận diện bệnh, trả về tên bệnh, giải pháp và độ tin cậy \\
+        \hline
+        \textbf{AI Dự báo độ ẩm} & Phân tích lịch sử độ ẩm, trả về dự báo ngắn hạn, lưu cache/lịch sử và tổng hợp weekly summary cho dashboard \\
         \hline
         \textbf{Thông báo} & Cảnh báo bất thường từ cảm biến và hệ thống, xóa từng thông báo hoặc xóa tất cả \\
         \hline
@@ -44,9 +81,15 @@
         \hline
         \textbf{Google OAuth} & Đăng nhập bằng tài khoản Google \\
         \hline
-        \caption{Các tính năng chính của hệ thống SmartFarm}
+        \caption{Các tính năng chính của hệ thống YoloFarm}
     \end{longtable}
-    
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\linewidth]{./Pictures/Task_6/architecture/core-flows.png}
+    \caption{Các luồng nghiệp vụ lõi của hệ thống YoloFarm}
+\end{figure}
+\indent Biểu đồ luồng lõi mô tả ba tuyến xử lý chính đang vận hành song song trong hệ thống. Dữ liệu cảm biến đi từ Adafruit IO/MQTT về backend để lưu lịch sử và phát realtime lên dashboard; lệnh điều khiển bơm, đèn được backend đẩy ngược ra feed thiết bị rồi đồng bộ trạng thái về web app; còn các yêu cầu AI được chuyển sang FastAPI để nhận diện bệnh hoặc dự báo độ ẩm trước khi trả kết quả về giao diện.
 
 \subsubsection{Giao diện đăng kí, đăng nhập}
 \indent Để đảm bảo tính bảo mật và cá nhân hóa trải nghiệm người dùng, hệ thống yêu cầu người dùng phải có tài khoản phân quyền để truy cập vào trong hệ thống và điều khiển thiết bị.
@@ -81,9 +124,10 @@
 	\item \textbf{Tùy chỉnh giao diện trang web:} Hiện tại, hệ thống hỗ trợ hai ngôn ngữ, đó là Tiếng Anh và Tiếng Việt. Phần dịch thuật song song hai ngôn ngữ này được tiến hành dựa vào kiến trúc i18n. Ngoài ra, người dùng có thể tùy ý thay đổi theme (sáng/tối), màu sắc chủ đạo, font chữ và độ bo góc của các thành phần giao diện. Các thông số này sẽ được lưu lại để tự động áp dụng trong các lần tiếp theo.
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width=0.85\linewidth]{./Pictures/Task_5/setting_preference.png}
+		\includegraphics[width=0.75\linewidth]{./Pictures/Task_5/setting_preference.png}
 		\caption{Tùy chỉnh giao diện trang web}
 	\end{figure}
+	\indent Màn hình này là nơi người dùng tác động trực tiếp lên lớp trình bày của toàn bộ hệ thống. Các lựa chọn về giao diện được liên kết với \textit{theme context}, cơ chế i18n và bộ lưu cấu hình người dùng, nên thay đổi tại đây sẽ được áp dụng đồng nhất cho dashboard, các trang điều khiển và cả những lần đăng nhập sau.
 	
 	\item \textbf{Xem hồ sơ của bản thân:} Nơi người dùng có thể cập nhật thông tin cá nhân bao gồm thay đổi tên hiển thị, thay đổi mật khẩu. Cụ thể, việc đổi mật khẩu chỉ có thể được thực hiện bởi người dùng đăng nhập vào hệ thống trực tiếp thay vì đăng nhập bằng tài khoản Google. Nếu đăng nhập bằng tài khoản Google thì người dùng đó không thể điều chỉnh được mật khẩu Google của mình qua trang web này. Đặc biệt, người dùng có thể tải lên ảnh đại diện (avatar) cá nhân, hệ thống sẽ sử dụng dịch vụ Cloudinary để lưu trữ ảnh an toàn.
 	\begin{figure}[H]
@@ -91,20 +135,23 @@
 		\includegraphics[width=0.85\linewidth]{./Pictures/Task_5/setting_profile.png}
 		\caption{Quản lý hồ sơ cá nhân}
 	\end{figure}
+	\indent Ảnh chụp này thể hiện nhóm chức năng phục vụ từng tài khoản cụ thể: cập nhật tên hiển thị, đổi mật khẩu theo điều kiện xác thực, và tải avatar lên dịch vụ lưu trữ ảnh. Đây là điểm giao nhau giữa lớp giao diện cá nhân hóa và các API hồ sơ người dùng, nên hệ thống vừa phải phản hồi nhanh cho người dùng vừa giữ đúng ràng buộc bảo mật theo từng loại tài khoản.
 	
 	\item \textbf{Xem chính sách bảo mật của hệ thống:} Hiển thị rõ ràng các quy định sử dụng và chính sách bảo vệ dữ liệu theo dạng Markdown preview.
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width=0.85\linewidth]{./Pictures/Task_5/setting_policy.png}
+		\includegraphics[width=0.75\linewidth]{./Pictures/Task_5/setting_policy.png}
 		\caption{Giao diện hiển thị Chính sách bảo mật}
 	\end{figure}
+	\indent Ở vai trò người dùng cuối, màn hình chính sách bảo mật là nơi hệ thống công bố nội dung quy định theo dạng đọc dễ hiểu, có thể hiển thị bằng ngôn ngữ hiện hành. Giá trị của màn hình này không chỉ nằm ở việc trình bày văn bản, mà còn ở chỗ nó tái sử dụng cùng pipeline quản lý nội dung với phần quản trị, bảo đảm tài liệu đang xem luôn là phiên bản đang có hiệu lực.
 	
 	\item \textbf{Admin tạo chính sách bảo mật:} Chức năng đặc quyền dành riêng cho quản trị viên (Admin). Admin có thể thêm, chỉnh sửa hoặc xóa nội dung các chính sách của website một cách trực tiếp từ giao diện văn bản bằng cách sử dụng định dạng markdown.
 	\begin{figure}[H]
 		\centering
-		\includegraphics[width=0.85\linewidth]{./Pictures/Task_5/setting_policy_admin.png}
+		\includegraphics[width=0.75\linewidth]{./Pictures/Task_5/setting_policy_admin.png}
 		\caption{Giao diện quản lý Chính sách bảo mật cho quản trị viên}
 	\end{figure}
+	\indent Với quản trị viên, cùng khu vực này trở thành công cụ vận hành nội dung: nhập tiêu đề, soạn thảo Markdown, xem trước và phát hành bản chính sách mới. Điều đó cho thấy trang Settings không chỉ phục vụ cá nhân hóa mà còn là giao diện quản trị nghiệp vụ, nơi backend phải ghi nhận phiên bản nội dung, trạng thái hiệu lực và hỗ trợ dịch song ngữ khi cần.
 
 	\item \textbf{Quản lý người dùng (Dành cho Admin):} Phân quyền quản trị cho phép Admin xem danh sách tất cả tài khoản, thực hiện các thao tác cấm (ban) hoặc bỏ cấm (unban) những người dùng có hành vi sai phạm. Ngoài ra cũng có thể thay đổi mật khẩu của một tài khoản user bất kỳ. Khi thay đổi mật khẩu của một người dùng thì hệ thống sẽ gửi mật khẩu mới cho người dùng đó thông qua mục thông báo. Mặt khác, admin cũng có thể thay đổi vai trò của các người dùng khác thành admin hoặc ngược lại.
 	\begin{figure}[H]
@@ -112,6 +159,7 @@
 		\includegraphics[width=0.85\linewidth]{./Pictures/Task_5/admin_manage_user.png}
 		\caption{Danh sách Quản lý người dùng tập trung của Admin}
 	\end{figure}
+	\indent Đây là màn hình tổng hợp các thao tác quản trị tài khoản quan trọng nhất: đổi vai trò, khóa/mở khóa và đặt lại mật khẩu. Từ góc nhìn chức năng, giao diện này giúp admin xử lý vòng đời người dùng trên cùng một nơi, đồng thời phối hợp với hệ thống thông báo để chuyển tiếp những thay đổi nhạy cảm như mật khẩu mới hoặc trạng thái tài khoản.
 \end{enumerate}
 \subsubsection{Giao diện Dashboard}
 \indent Phần giao diện tổng quan của hệ thống gồm có 3 phần chính:
@@ -125,6 +173,7 @@
 	\includegraphics[width=0.8\linewidth]{./Pictures/Task_5/overview.png}
 	\caption{Tổng quan hệ thống}
 \end{figure}
+\indent Ảnh dashboard cho thấy đây là nơi hội tụ của nhiều luồng chức năng: thẻ cảm biến phản ánh dữ liệu mới nhất, khu vực biểu đồ hỗ trợ theo dõi xu hướng theo thời gian, còn phần điều khiển nhanh giúp tác động ngay lên các thiết bị đang hoạt động. Vì vậy dashboard không chỉ là màn hình ``xem số liệu'', mà còn là điểm ra quyết định nhanh, nơi người dùng so sánh dữ liệu thực đo với lịch sử và các tổng hợp dự báo do backend chuẩn bị sẵn.
 \subsubsection{Giao diện điều khiển}
 \indent Giao diện điều khiển là nơi cho phép người dùng quản lý trọn vẹn tất cả thiết bị được kết nối. Khi người dùng thao tác tương tác bằng cách bật/tắt thiết bị tại đây, tín hiệu sẽ đi qua backend API viết trên Node.js và nhanh chóng giao tiếp với Adafruit IO trực tiếp thông qua giao thức MQTT.\\
 \indent Hệ thống hỗ trợ xử lý nhiều thiết bị cùng lúc (ví dụ như hai máy bơm \texttt{pump1}, \texttt{pump2} và một đèn \texttt{led-rgb}). Các trạng thái đang hoạt động, khu vực được phân bổ, chức năng, và thời gian hoạt động của máy bơm nước hay đèn chiếu sáng đều được phản hồi theo thời gian thực (realtime) lên phần mềm. Điều này có nghĩa là cho dù thiết bị được bật, tắt từ web app, hay từ mạng phần cứng, trạng thái đều đồng bộ cả hai chiều, giúp người dùng dễ quản lý và hạn chế rủi ro cho trang trại.
@@ -133,6 +182,7 @@
 	\includegraphics[width=0.8\linewidth]{./Pictures/Task_5/control_panel.png}
 	\caption{Giao diện bảng điều khiển thiết bị (Control Panel)}
 \end{figure}
+\indent Trong ảnh chụp này, mỗi thẻ thiết bị đồng thời đóng vai trò bộ hiển thị trạng thái và nút thao tác trực tiếp. Người dùng có thể biết thiết bị nào đang bật, thời điểm thay đổi gần nhất và thực hiện lệnh thủ công ngay tại chỗ; còn backend chịu trách nhiệm đồng bộ thao tác đó về hạ tầng MQTT rồi phản hồi trở lại giao diện, nhờ vậy thao tác điều khiển luôn có xác nhận trạng thái rõ ràng.
 
 \subsubsection{Giao diện phần lịch trình}
 \indent Phần này cho phép người dùng thiết lập và xem được phần lịch trình đã được lên sẵn để điều khiển các thiết bị có trong trang trại. Cụ thể, người dùng có thể xem được tất cả các khung giờ mà tất cả người dùng của trang trại đã đặt để điều khiển các thiết bị tương ứng. Ví dụ, người dùng A có thể xem được lịch mà các người dùng khác (giả sử là B và Admin) đã thiết lập để hệ thống bật/tắt thiết bị (đèn chiếu sáng) một cách tự động.\\
@@ -143,6 +193,7 @@
 	\includegraphics[width=0.8\linewidth]{./Pictures/Task_5/schedule.png}
 	\caption{Giao diện phần xem lịch trình tự động hóa}
 \end{figure}
+\indent Màn hình lịch trình đóng vai trò bảng điều phối tự động hóa của toàn bộ trang trại. Việc hiển thị theo ngày hoặc tuần giúp người dùng nhanh chóng xác định thiết bị nào sẽ chạy ở thời điểm nào, lịch nào do ai tạo và liệu có nguy cơ chồng chéo thao tác hay không trước khi hệ thống thực thi.
 \indent Có thể xem được lịch trình theo nhiều chế độ. Cụ thể là theo ngày hoặc theo tuần trên một timeline dựa vào thời gian thực. Ngoài ra, người dùng còn có thể chọn các thiết bị cần xem lịch trình (máy bơm 1, 2 hoặc đèn LED).\\
 \indent Mặt khác, có thể thêm lịch trình mới bằng cách nhấn vào nút ``Sự kiện mới'' ở góc trên bên phải màn hình. Khi bấm vào nút này thì một cửa sổ nhỏ hiện lên với các thông tin mà người dùng cần phải điền để có thể thêm một lịch trình mới cho một trong các thiết bị một cách hợp lệ. Nếu lịch được thêm có ngày bắt đầu là một thời điểm trong quá khứ so với thời gian thực thì hệ thống sẽ không ghi nhận lịch trình này và báo lỗi ``lịch trình không thể bắt đầu vào một thời điểm trong quá khứ''. Mặt khác, nếu ngày kết thúc nhỏ hơn ngày bắt đầu cũng sẽ có lỗi xảy ra.\\
 \indent Khi thời gian thực tới thời điểm bắt đầu một lịch trình nào đó thì hệ thống sẽ kiểm tra xem thiết bị đã hoạt động hay chưa. Nếu chưa thì hệ thống sẽ tự động khởi động (bật) thiết bị đó lên. Khi kết thúc lịch trình, nếu thiết bị đang bật thì hệ thống sẽ tắt thiết bị đó đi một cách hoàn toàn tự động.
@@ -151,6 +202,7 @@
 	\includegraphics[width=0.8\linewidth]{./Pictures/Task_5/schedule_setup.png}
 	\caption{Giao diện phần thêm lịch trình mới}
 \end{figure}
+\indent Hộp thoại tạo lịch thể hiện rõ phần chức năng nhập liệu và kiểm tra ràng buộc của hệ thống. Người dùng phải chọn đúng thiết bị, thời điểm bắt đầu, thời lượng và chu kỳ lặp; từ đó backend mới có thể tạo bản ghi hợp lệ để dịch sang các tác vụ bật/tắt thiết bị trong dịch vụ scheduler.
 \subsubsection{Giao diện hệ thống thông báo}
 \indent Giao diện thông báo giúp tổng hợp và cập nhật liên tục cho người dùng nếu có cảnh báo về môi trường (như nhiệt độ bất thường, độ ẩm thấp) hoặc các sự kiện tự động hoá (đã đến giờ bật bơm). Các thông báo này đẩy qua dịch vụ Socket.IO hiển thị tự động. Nhờ giao diện trực quan, người quản trị có thể dễ dàng đánh dấu đã đọc một hay tất cả thông báo, có thể ghim/lưu (save) các cảnh báo trọng điểm, cũng như chọn xóa đi khi không cần thiết.
 \begin{figure}[H]
@@ -158,16 +210,19 @@
 	\includegraphics[width=0.9\linewidth]{./Pictures/Task_5/notification.png}
 	\caption{Giao diện hệ thống thông báo báo động và giám sát}
 \end{figure}
+\indent Ảnh giao diện này minh họa vai trò của trung tâm cảnh báo trong YoloFarm: tập hợp thông báo theo mức độ, trạng thái đọc/chưa đọc và đối tượng người dùng. Về mặt chức năng, đây là nơi kết nối các nhánh giám sát môi trường, scheduler và AI với hành động của người vận hành, giúp họ không bỏ sót cảnh báo quan trọng ngay cả khi không đang mở dashboard hay control panel.
 
-\subsection{Huấn luyện AI nhận diện lá cây bệnh}
-\indent Một trong những tính năng nổi bật của SmartFarm là việc tích hợp Trí tuệ nhân tạo (AI) giúp chẩn đoán và phát hiện tình trạng sâu bệnh trên lá cây dựa vào việc phân tích và xử lý các loại hình ảnh của lá cây cà chua (png, jpg, jpeg).\\
-\indent Dịch vụ AI này chia thành một microservice hoạt động độc lập bằng FastAPI, sử dụng kiến trúc mạng nơ-ron tích chập nổi bật \textbf{EfficientNet}. Thông qua việc tải ảnh lá cây bệnh lên hệ thống, tiến trình backend tại đây sẽ uỷ thác cho nền tảng AI phân tích. Chỉ trong vài giây, hệ thống trả ra dữ liệu kết quả là Tên loại bệnh, độ tự tin (confidence) của chẩn đoán mô hình, và ngay lập tức cung cấp phác đồ cách thức khắc phục (Ví dụ cắt cành sâu trị nấm,...). Đây là một ưu điểm rất lớn của hệ thống.
+\subsection{Các tính năng AI của hệ thống}
+\subsubsection{AI nhận diện sâu bệnh}
+\indent Một trong những tính năng nổi bật của YoloFarm là việc tích hợp Trí tuệ nhân tạo (AI) giúp chẩn đoán và phát hiện tình trạng sâu bệnh trên lá cây dựa vào việc phân tích và xử lý các loại hình ảnh của lá cây cà chua (png, jpg, jpeg).\\
+\indent Dịch vụ AI này được triển khai như một microservice hoạt động độc lập bằng FastAPI, trong đó bài toán nhận diện bệnh sử dụng kiến trúc mạng nơ-ron tích chập \textbf{EfficientNet}. Thông qua việc tải ảnh lá cây bệnh lên hệ thống, backend Node.js sẽ uỷ thác cho nền tảng AI phân tích. Chỉ trong vài giây, hệ thống trả ra dữ liệu kết quả là tên loại bệnh, độ tự tin (confidence) của chẩn đoán mô hình, và ngay lập tức cung cấp phác đồ cách thức khắc phục (ví dụ cắt cành sâu, trị nấm,\ldots). Đây là một ưu điểm rất lớn của hệ thống.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.9\linewidth]{./Pictures/Task_5/AI_general.png}
 	\caption{Giao diện sử dụng AI chẩn đoán bệnh nông nghiệp}
 \end{figure}
+\indent Giao diện AI trong ảnh tập trung vào nhánh phân tích ảnh lá cây: người dùng tải ảnh lên, nhận kết quả nhận diện bệnh, độ tin cậy và khuyến nghị xử lý. Tuy nhiên về kiến trúc, đây chỉ là một nửa vai trò của microservice FastAPI; cùng dịch vụ đó còn cung cấp đầu ra dự báo độ ẩm không khí cho backend để tổng hợp lên dashboard và sinh cảnh báo khi điều kiện môi trường trở nên bất lợi cho cây trồng.
 
 \indent Mô hình AI hiện tại được hệ thống chia thành 6 lớp phân loại tình trạng của rau màu (cà chua): bao gồm 1 lớp khỏe mạnh và 5 lớp tổn thương khác.
 \vspace{0.2cm}
@@ -211,4 +266,55 @@
 		\caption{Các tập mẫu kết quả nhận diện trên mô hình thực tế}
 	\end{figure}
 \end{enumerate}
-%TODO: Thêm phần mô tả về cách thức hoạt động của AI dựa trên phần xử lý hình ảnh thuộc yolofarm\server\api\main.py
+\subsubsection{AI dự báo độ ẩm không khí}
+\indent Bên cạnh bài toán xử lý ảnh, cùng dịch vụ FastAPI còn triển khai tuyến dự báo độ ẩm không khí bằng mô hình GRU viết bằng PyTorch. Khác với nhánh nhận diện sâu bệnh chỉ xử lý một ảnh đầu vào tại thời điểm người dùng yêu cầu, nhánh dự báo độ ẩm làm việc trên chuỗi dữ liệu môi trường đã được tích lũy theo thời gian để tạo ra các giá trị dự báo ngắn hạn cho những mốc kế tiếp.\\
+\indent Backend hiện tại gọi endpoint dự báo để lấy chuỗi giá trị ngắn hạn, sau đó lưu cache và lịch sử dự báo trong MySQL nhằm hỗ trợ cơ chế fallback, phát cảnh báo độ ẩm thấp và tổng hợp weekly summary cho dashboard. Nhờ đó giao diện có thể vừa hiển thị kết quả AI mới nhất, vừa đối chiếu dữ liệu dự báo với số đo thực tế theo từng ngày mà không phải tính toán lại ở mỗi lần tải trang.
+
+\indent Tính năng AI dự báo độ ẩm hiện được thể hiện qua hai lớp giao diện chính: một lớp trực quan hóa xu hướng ngắn hạn trên biểu đồ, và một lớp đối chiếu lịch sử để người dùng kiểm tra độ khớp giữa dự báo với dữ liệu thực tế đã đo được.
+\vspace{0.2cm}
+\begin{enumerate}[label=\textbf{\arabic*.}, leftmargin=1.5cm ]
+	\item \textbf{Biểu đồ dự báo độ ẩm ngắn hạn}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.92\linewidth]{./Pictures/Task_5/AI_Humidity_Pred.png}
+		\caption{Biểu đồ AI dự báo độ ẩm không khí trên dashboard YoloFarm}
+	\end{figure}
+	\indent Ảnh trên thể hiện phần trực quan hóa chính của tính năng dự báo độ ẩm. Hệ thống đặt dữ liệu độ ẩm thực tế cạnh chuỗi độ ẩm dự báo, đồng thời hiển thị giới hạn trên và khoảng tin cậy để người dùng đánh giá nhanh xu hướng biến động môi trường trong các mốc thời gian kế tiếp. Đây là khu vực giúp người vận hành quan sát xem độ ẩm đang có xu hướng giảm, tăng hay dao động bất thường trước khi tác động đến cây trồng.
+
+	\item \textbf{Bảng lịch sử đối chiếu dữ liệu dự báo}
+	\begin{figure}[H]
+		\centering
+		\includegraphics[width=0.92\linewidth]{./Pictures/Task_5/AI_Humidity_Pred_2.png}
+		\caption{Bảng lịch sử so sánh độ ẩm thực tế và độ ẩm dự báo}
+	\end{figure}
+	\indent Bảng lịch sử độ ẩm là phần bổ sung cho biểu đồ dự báo, cho phép người dùng đối chiếu giá trị trung bình thực tế với kết quả dự báo đã lưu theo từng ngày. Các cột sai lệch, trạng thái và lý do thiếu dữ liệu giúp người vận hành nhận biết ngày nào điều kiện độ ẩm đang ổn định, ngày nào thiếu dữ liệu hoặc cần kiểm tra lại nguồn đo và mô hình dự báo. Nhờ phần hiển thị này, tính năng AI dự báo độ ẩm không chỉ dừng ở việc cung cấp con số dự báo mà còn hỗ trợ người dùng đánh giá chất lượng đầu ra của mô hình qua thời gian.
+\end{enumerate}
+
+\subsection{Kết nối Adafruit với phần cứng}
+\indent Sau khi hoàn thiện phần dashboard, backend và cấu hình feed trên Adafruit IO, nhóm tiến hành lập trình trực tiếp trên OhStem/Yolo:Bit để kết nối lớp phần cứng với hệ thống IoT. Chương trình trên board đảm nhiệm các tác vụ chính gồm kết nối Wi-Fi, đăng nhập vào Adafruit IO, đọc dữ liệu từ các cảm biến, gửi dữ liệu lên các feed tương ứng và lắng nghe lệnh điều khiển thiết bị được gửi xuống từ dashboard hoặc backend. Nhờ đó, Adafruit IO trở thành lớp trung gian đồng bộ hai chiều giữa thiết bị vật lý và phần mềm YoloFarm.
+
+\subsubsection{Cấu hình kết nối và xử lý lệnh điều khiển}
+\indent Ở giai đoạn khởi tạo, chương trình hiển thị trạng thái bắt đầu trên màn hình, kết nối vào mạng Wi-Fi và thiết lập phiên làm việc với server Adafruit.IO bằng tài khoản và khóa truy cập đã cấu hình trong môi trường lập trình. Sau khi kết nối thành công, hệ thống khởi tạo các biến môi trường như nhiệt độ, độ ẩm, độ ẩm đất và ánh sáng, đồng thời đăng ký các kênh dữ liệu cần theo dõi để nhận lệnh điều khiển từ xa.
+
+\indent Hình dưới minh họa phần chương trình xử lý các feed điều khiển. Khi feed \texttt{yolofarmdeploy.led-rgb} nhận giá trị bật, LED RGB tại chân \texttt{P0} sẽ đổi sang màu đỏ để báo trạng thái hoạt động; khi nhận giá trị tắt, LED được chuyển về trạng thái không sáng. Tương tự, feed \texttt{yolofarmdeploy.pump1} được dùng để điều khiển máy bơm nối với chân \texttt{P10}. Ngoài điều khiển thủ công từ Adafruit, chương trình còn có một nhánh tự động kiểm tra độ ẩm đất theo chu kỳ: nếu giá trị \texttt{SM} thấp hơn ngưỡng cho phép thì máy bơm tại chân \texttt{P13} được bật, còn khi độ ẩm đất vượt ngưỡng cao thì máy bơm được tắt để tránh tưới quá mức.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\linewidth]{./Pictures/Task_5/ohstem1.png}
+	\caption{Chương trình OhStem cấu hình kết nối Adafruit IO và xử lý lệnh điều khiển thiết bị}
+\end{figure}
+
+\indent Cách tổ chức này giúp phần cứng không chỉ nhận lệnh từ dashboard mà còn có khả năng phản ứng tự động theo dữ liệu cảm biến tại chỗ. Do đó, ngay cả khi người dùng không thao tác trực tiếp, hệ thống vẫn có thể duy trì một mức tự động hóa cơ bản cho quá trình tưới nước.
+
+\subsubsection{Thu thập và đồng bộ dữ liệu cảm biến}
+\indent Bên cạnh luồng nhận lệnh điều khiển, chương trình OhStem còn định kỳ thu thập dữ liệu môi trường để gửi về Adafruit IO. Cứ sau 30 giây, board cập nhật cảm biến DHT20 để đọc nhiệt độ và độ ẩm không khí, đọc cảm biến độ ẩm đất tại chân \texttt{P1}, đồng thời đọc cảm biến ánh sáng tại chân \texttt{P2}. Giá trị độ ẩm đất được quy đổi từ miền analog \texttt{0--4096} sang miền phần trăm \texttt{0--100} để dễ hiển thị và xử lý ở dashboard.
+
+\indent Các biến được dùng trong chương trình gồm \texttt{RT} cho nhiệt độ, \texttt{RH} cho độ ẩm không khí, \texttt{SM} cho độ ẩm đất sau khi quy đổi và \texttt{LUX} cho cường độ ánh sáng. Sau khi đọc xong, các giá trị này được hiển thị trực tiếp lên LCD1602 để người dùng có thể quan sát tại thiết bị, sau đó được gửi lên các feed \texttt{yolofarmdeploy.temperature}, \texttt{yolofarmdeploy.humidity}, \texttt{yolofarmdeploy.soil-moisture} và \texttt{yolofarmdeploy.light}. Đây là nguồn dữ liệu thực tế để backend lưu lịch sử, phát realtime lên dashboard và cung cấp đầu vào cho các chức năng phân tích sau này.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.62\linewidth]{./Pictures/Task_5/ohstem2.png}
+	\caption{Chương trình OhStem đọc cảm biến, hiển thị LCD và gửi dữ liệu môi trường lên Adafruit IO}
+\end{figure}
+
+\indent Như vậy, phần hiện thực trên OhStem/Yolo:Bit hoàn thiện cầu nối trực tiếp giữa cảm biến, cơ cấu chấp hành và nền tảng Adafruit IO. Dữ liệu thật từ phần cứng được đẩy lên các feed để phần mềm nhận lại qua MQTT/API, trong khi lệnh từ giao diện web có thể đi theo chiều ngược lại để bật, tắt thiết bị vật lý. Luồng đồng bộ hai chiều này là nền tảng để YoloFarm vận hành như một hệ thống IoT hoàn chỉnh thay vì chỉ là một dashboard mô phỏng.

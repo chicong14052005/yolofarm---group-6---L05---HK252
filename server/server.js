@@ -147,10 +147,10 @@ schedulerService.start(io);
 server.listen(PORT, () => {
   console.log(`
   ╔═══════════════════════════════════════════╗
-  ║   🌱 YoloFarm Server is running          ║
+  ║   🌱 YoloFarm Server is running           ║
   ║   Port: ${PORT}                              ║
-  ║   Mode: ${process.env.NODE_ENV || 'development'}                    ║
-  ║   API:  http://localhost:${PORT}/api          ║
+  ║   Mode: ${process.env.NODE_ENV || 'development'}                       ║
+  ║   API:  http://localhost:${PORT}/api         ║
   ╚═══════════════════════════════════════════╝
   `);
 });

@@ -1,4 +1,25 @@
-\vspace{-1cm}
-\section{Giới thiệu đề tài}
-\indent Trong bối cảnh nông nghiệp công nghệ cao ngày càng phát triển, đặc biệt là mô hình nhà kính giúp con người kiểm soát chặt chẽ các yếu tố như ánh sáng, nhiệt độ, độ ẩm và chất lượng không khí, việc tối ưu hóa quy trình tưới tiêu vẫn luôn là thách thức. Chúng tôi đề xuất phát triển một hệ thống giám sát và chăm sóc cây trồng thông minh tích hợp trí tuệ nhân tạo (YoloFarm) nhằm xây dựng một giải pháp nông nghiệp thông minh toàn diện, không chỉ dừng lại ở việc giám sát thông số môi trường mà còn có khả năng thấu hiểu sức khỏe cây trồng thông qua AI để đưa ra các biện pháp chăm sóc chủ động.\\
-\indent Về công nghệ, chúng tôi sử dụng mạch YOLO:bit làm trung tâm thu thập dữ liệu và điều khiển các thiết bị ngoại vi. Đồng thời, tích hợp trí tuệ nhân tạo để dự báo các biến động môi trường dựa trên dữ liệu lịch sử, nhận diện sâu bệnh dựa trên hình ảnh để đưa ra các cảnh báo sớm.
+\section{Task 1. Thu thập yêu cầu nghiệp vụ -- Requirements}
+
+\subsection{Task 1.1. Chi tiết đặc tả của dự án -- Project details specification}
+\indent Hệ thống YoloFarm được xây dựng nhằm đáp ứng nhu cầu giám sát môi trường, điều khiển thiết bị từ xa, thiết lập lịch trình chăm sóc, ứng dụng AI nhận diện và phân tích sâu bệnh trên cây trồng, đồng thời dự báo độ ẩm không khí để hỗ trợ vận hành trang trại hiệu quả hơn.
+
+\subsubsection{Đặt vấn đề}
+\indent Trong bối cảnh canh tác hiện đại, người vận hành trang trại cần theo dõi liên tục nhiều chỉ số như nhiệt độ, độ ẩm không khí, độ ẩm đất và trạng thái thiết bị để đảm bảo cây trồng phát triển ổn định. Nếu các hoạt động giám sát và điều khiển vẫn thực hiện rời rạc hoặc thủ công, người dùng sẽ khó phản ứng kịp thời khi môi trường thay đổi, dễ bỏ lỡ lịch chăm sóc và gặp hạn chế trong việc khai thác dữ liệu lịch sử. Bên cạnh đó, việc phát hiện sớm sâu bệnh và dự báo biến động độ ẩm vẫn là những bài toán quan trọng đòi hỏi khả năng phân tích dữ liệu và hình ảnh bằng AI.
+
+\subsubsection{Giải pháp đặt ra}
+\indent YoloFarm được đề xuất như một nền tảng quản lý trang trại thông minh tập trung, kết hợp ứng dụng quản lý và hạ tầng IoT để đồng bộ dữ liệu, cảnh báo và thao tác điều khiển trên một giao diện thống nhất. Nhờ đó, hệ thống hỗ trợ theo dõi trạng thái môi trường, điều khiển từ xa, quản lý lịch trình chăm sóc, nhận diện và phân tích sâu bệnh trên lá cây, cũng như dự báo độ ẩm không khí trên cùng một nền tảng.
+
+\subsection{Các bên liên quan và hệ thống tương tác của YoloFarm}
+\indent Xét về nghiệp vụ, các bên liên quan chính của YoloFarm là người dùng trang trại và quản trị viên. Bên cạnh đó, hệ thống còn tương tác trực tiếp với các thành phần kỹ thuật như phần cứng IoT và dịch vụ AI để thu thập dữ liệu, phân tích và thực thi điều khiển.
+
+\subsubsection{Người dùng trang trại (User)}
+\indent Đây là nhóm sử dụng chính của YoloFarm, bao gồm chủ trang trại hoặc người trực tiếp chăm sóc cây trồng. Người dùng cần một dashboard trực quan để theo dõi dữ liệu cảm biến theo thời gian thực, nhận thông báo khi có bất thường, bật/tắt thiết bị từ xa, thiết lập lịch hoạt động cho hệ thống tưới hoặc chiếu sáng, đồng thời sử dụng các tính năng AI như nhận diện và phân tích sâu bệnh trên lá cây và xem dự báo độ ẩm không khí để hỗ trợ ra quyết định chăm sóc.
+
+\subsubsection{Quản trị viên (Admin)}
+\indent Quản trị viên chịu trách nhiệm quản lý tài khoản và duy trì hoạt động ổn định của nền tảng. Nhóm này cần các chức năng quản lý người dùng, phân quyền, khóa hoặc mở khóa tài khoản khi cần thiết, cập nhật nội dung vận hành như chính sách hệ thống, đồng thời theo dõi tình trạng sử dụng để đảm bảo dữ liệu và dịch vụ luôn sẵn sàng cho người dùng cuối.
+
+\subsubsection{Hệ thống phần cứng IoT (hệ thống tương tác)}
+\indent Hệ thống phần cứng IoT bao gồm các cảm biến môi trường, bộ điều khiển và thiết bị chấp hành được triển khai tại trang trại. Thành phần này có vai trò thu thập dữ liệu thực tế, gửi dữ liệu lên nền tảng và nhận lệnh điều khiển từ hệ thống trung tâm để kích hoạt bơm, đèn hoặc các thiết bị khác. Đây là nguồn dữ liệu đầu vào quan trọng giúp YoloFarm theo dõi trạng thái trang trại và thực thi các thao tác tự động hóa.
+
+\subsubsection{Dịch vụ AI (dịch vụ tích hợp)}
+\indent Dịch vụ AI đảm nhiệm hai nhóm chức năng chính: phân tích hình ảnh lá cây để nhận diện sâu bệnh và xử lý dữ liệu lịch sử để dự báo độ ẩm không khí. Kết quả từ dịch vụ này được tích hợp trực tiếp vào ứng dụng nhằm hỗ trợ người dùng phát hiện sớm rủi ro, tối ưu kế hoạch chăm sóc và nâng cao mức độ tự động hóa của toàn bộ hệ thống YoloFarm.

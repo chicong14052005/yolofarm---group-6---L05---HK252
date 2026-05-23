@@ -5,7 +5,7 @@
 \begin{itemize}
     \item \texttt{\#ifndef MLQ\_SCHED}, \texttt{\#define MLQ\_SCHED} và \texttt{\#endif}: Nếu cờ \texttt{MLQ\_SCHED} không được định nghĩa, thì nó sẽ được định nghĩa.
     \item Định nghĩa \texttt{MAX\_PRIO} là 140: Mức độ ưu tiên tối đa của các tiến trình trong hệ thống.
-    \item Định nghĩa hàm \texttt{queue\_empty()}: Kiểm tra xem tất cả các hàng đợi có trống không (còn tiến trình nào không). 
+    \item Định nghĩa hàm \texttt{queue\_empty()}: Kiểm tra xem tất cả các hàng đợi có trống không (còn tiến trình nào không).
     \item Các hàm quản lý bộ lập lịch:
     \begin{itemize}
         \item \texttt{init\_scheduler()}: Khởi tạo hệ thống lập lịch, bao gồm việc khởi tạo các hàng đợi và gán giá trị ban đầu.
@@ -39,9 +39,9 @@
 #endif
 
 #ifdef MLQ_SCHED
-int get_slot(uint32_t prio);                    
+int get_slot(uint32_t prio);
 void update_slot(uint32_t prio, int used_time);
-void reset_slot();                             
+void reset_slot();
 
 struct pcb_t *get_mlq_proc(void);
 void put_mlq_proc(struct pcb_t *proc);
@@ -201,7 +201,7 @@ Chức năng: Hiện thực hàm \texttt{get\_proc()} và hàm \texttt{get\_mlq\
     \end{itemize}
     \item Nếu hàng đợi \textbf{mlq\_ready\_queue} tại \texttt{curr\_prio} rỗng:
     \begin{itemize}
-        \item Ta tăng biến \texttt{count\_empty} lên 1 đơn vị. 
+        \item Ta tăng biến \texttt{count\_empty} lên 1 đơn vị.
         \item Nếu tất cả hàng đợi ở tất cả mức độ ưu tiên đều rỗng, ta dùng \texttt{break} để thoát khỏi vòng lặp.
         \item Sau đó, ta chuyển sang mức độ ưu tiên tiếp theo. Nếu ta đã duyệt được 1 chu kỳ, ta thiết lập biến \texttt{count\_empty} về 0 và sử dụng hàm \texttt{reset\_slot()} để thiết lập lại slot ở tất cả mức độ ưu tiên. Tiếp đó, ta lại gọi \texttt{continue} để sang vòng lặp tiếp theo với mức độ ưu tiên mới cập nhật.
     \end{itemize}
@@ -310,7 +310,7 @@ void put_proc(struct pcb_t *proc)
 Chức năng: Hiện thực hàm \texttt{add\_proc()} và hàm \texttt{add\_mlq\_proc()} để thêm tiến trình mới vào đúng hàng đợi theo mức độ ưu tiên.
 
 \begin{itemize}
-    \item Hàm \texttt{add\_mlq\_proc()} thêm tiến trình \texttt{proc} vào hàng đợi \texttt{mlq\_ready\_queue[proc->prio]}, hàng đợi sẵn sàng tương ứng với mức độ ưu tiên của tiến trình. Ta cũng sử dụng khóa mutex trong hàm này để tránh tình trạng xung đột giữa các luồng. 
+    \item Hàm \texttt{add\_mlq\_proc()} thêm tiến trình \texttt{proc} vào hàng đợi \texttt{mlq\_ready\_queue[proc->prio]}, hàng đợi sẵn sàng tương ứng với mức độ ưu tiên của tiến trình. Ta cũng sử dụng khóa mutex trong hàm này để tránh tình trạng xung đột giữa các luồng.
     \item Hàm \texttt{add\_proc()} dùng để thêm một tiến trình mới vào hệ thống lập lịch. Đầu tiên, hàm gán các trường \texttt{ready\_queue}, \texttt{mlq\_ready\_queue} và \texttt{running\_list} trong cấu trúc \texttt{proc} để liên kết tiến trình với các hàng đợi liên quan. Sau đó, tiến trình được thêm vào danh sách các tiến trình đang chạy bằng cách gọi \texttt{enqueue(\&running\_list, proc)}. Cuối cùng, hàm gọi \texttt{add\_mlq\_proc()} để thêm tiến trình vào đúng hàng đợi ưu tiên (\texttt{mlq\_ready\_queue}) để chờ được lập lịch thực thi.
 \end{itemize}
 

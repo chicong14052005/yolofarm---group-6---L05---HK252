@@ -1,0 +1,41 @@
+\contentsline {figure}{\numberline {1}{\ignorespaces Use-case diagram -- Toàn bộ hệ thống}}{9}{figure.caption.4}%
+\contentsline {figure}{\numberline {2}{\ignorespaces Use-case diagram -- chi tiết cho role Admin}}{21}{figure.caption.5}%
+\contentsline {figure}{\numberline {3}{\ignorespaces Cảm biến DHT20}}{25}{figure.caption.6}%
+\contentsline {figure}{\numberline {4}{\ignorespaces Cảm biến độ ẩm đất}}{25}{figure.caption.7}%
+\contentsline {figure}{\numberline {5}{\ignorespaces Cảm biến ánh sáng}}{26}{figure.caption.8}%
+\contentsline {figure}{\numberline {6}{\ignorespaces Đèn RGB}}{26}{figure.caption.9}%
+\contentsline {figure}{\numberline {7}{\ignorespaces Màn hình LCD 16$\times $2}}{27}{figure.caption.10}%
+\contentsline {figure}{\numberline {8}{\ignorespaces Máy bơm mini}}{27}{figure.caption.11}%
+\contentsline {figure}{\numberline {9}{\ignorespaces Kết nối thêm ngoại vi cho Yolo:Bit}}{28}{figure.caption.12}%
+\contentsline {figure}{\numberline {10}{\ignorespaces Adafruit dashboard giám sát hệ thống}}{29}{figure.caption.13}%
+\contentsline {figure}{\numberline {11}{\ignorespaces Kiến trúc hệ thống YoloFarm}}{30}{figure.caption.14}%
+\contentsline {figure}{\numberline {12}{\ignorespaces Biểu đồ C4 Context của hệ thống YoloFarm}}{31}{figure.caption.15}%
+\contentsline {figure}{\numberline {13}{\ignorespaces Biểu đồ C4 Container của hệ thống YoloFarm}}{32}{figure.caption.16}%
+\contentsline {figure}{\numberline {14}{\ignorespaces Biểu đồ thành phần frontend của hệ thống YoloFarm}}{32}{figure.caption.17}%
+\contentsline {figure}{\numberline {15}{\ignorespaces Biểu đồ thành phần backend của hệ thống YoloFarm}}{33}{figure.caption.18}%
+\contentsline {figure}{\numberline {16}{\ignorespaces Biểu đồ phụ thuộc mô-đun trong hệ thống YoloFarm}}{34}{figure.caption.19}%
+\contentsline {figure}{\numberline {17}{\ignorespaces Các luồng nghiệp vụ lõi của hệ thống YoloFarm}}{36}{figure.caption.20}%
+\contentsline {figure}{\numberline {18}{\ignorespaces Giao diện đăng kí tài khoản mới}}{37}{figure.caption.21}%
+\contentsline {figure}{\numberline {19}{\ignorespaces Giao diện đăng nhập bằng tài khoản hệ thống}}{37}{figure.caption.22}%
+\contentsline {figure}{\numberline {20}{\ignorespaces Giao diện đăng nhập thông qua Google OAuth}}{38}{figure.caption.23}%
+\contentsline {figure}{\numberline {21}{\ignorespaces Tùy chỉnh giao diện trang web}}{38}{figure.caption.24}%
+\contentsline {figure}{\numberline {22}{\ignorespaces Quản lý hồ sơ cá nhân}}{39}{figure.caption.25}%
+\contentsline {figure}{\numberline {23}{\ignorespaces Giao diện hiển thị Chính sách bảo mật}}{40}{figure.caption.26}%
+\contentsline {figure}{\numberline {24}{\ignorespaces Giao diện quản lý Chính sách bảo mật cho quản trị viên}}{40}{figure.caption.27}%
+\contentsline {figure}{\numberline {25}{\ignorespaces Danh sách Quản lý người dùng tập trung của Admin}}{41}{figure.caption.28}%
+\contentsline {figure}{\numberline {26}{\ignorespaces Tổng quan hệ thống}}{43}{figure.caption.29}%
+\contentsline {figure}{\numberline {27}{\ignorespaces Giao diện bảng điều khiển thiết bị (Control Panel)}}{44}{figure.caption.30}%
+\contentsline {figure}{\numberline {28}{\ignorespaces Giao diện phần xem lịch trình tự động hóa}}{45}{figure.caption.31}%
+\contentsline {figure}{\numberline {29}{\ignorespaces Giao diện phần thêm lịch trình mới}}{46}{figure.caption.32}%
+\contentsline {figure}{\numberline {30}{\ignorespaces Giao diện hệ thống thông báo báo động và giám sát}}{47}{figure.caption.33}%
+\contentsline {figure}{\numberline {31}{\ignorespaces Giao diện sử dụng AI chẩn đoán bệnh nông nghiệp}}{48}{figure.caption.34}%
+\contentsline {figure}{\numberline {32}{\ignorespaces Lá cà chua khoẻ mạnh (Healthy)}}{49}{figure.caption.35}%
+\contentsline {figure}{\numberline {33}{\ignorespaces Các tập mẫu kết quả nhận diện trên mô hình thực tế}}{49}{figure.caption.36}%
+\contentsline {figure}{\numberline {34}{\ignorespaces Biểu đồ AI dự báo độ ẩm không khí trên dashboard YoloFarm}}{50}{figure.caption.37}%
+\contentsline {figure}{\numberline {35}{\ignorespaces Bảng lịch sử so sánh độ ẩm thực tế và độ ẩm dự báo}}{51}{figure.caption.38}%
+\contentsline {figure}{\numberline {36}{\ignorespaces Chương trình OhStem cấu hình kết nối Adafruit IO và xử lý lệnh điều khiển thiết bị}}{53}{figure.caption.39}%
+\contentsline {figure}{\numberline {37}{\ignorespaces Chương trình OhStem đọc cảm biến, hiển thị LCD và gửi dữ liệu môi trường lên Adafruit IO}}{54}{figure.caption.40}%
+\contentsline {figure}{\numberline {38}{\ignorespaces Sơ đồ triển khai của YoloFarm theo hai chế độ chạy local và Docker Compose}}{57}{figure.caption.41}%
+\contentsline {figure}{\numberline {39}{\ignorespaces Giao diện Deployment phần mã nguồn Frontend trên Vercel}}{58}{figure.caption.42}%
+\contentsline {figure}{\numberline {40}{\ignorespaces Danh sách mã nguồn Backend Server chạy trên Hugging Face Spaces}}{58}{figure.caption.43}%
+\contentsline {figure}{\numberline {41}{\ignorespaces Hệ thống tự động biên dịch và chạy các mô hình AI}}{59}{figure.caption.44}%

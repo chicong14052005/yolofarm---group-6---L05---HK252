@@ -1,30 +1,35 @@
 \section{Yêu cầu người dùng}
 \subsection{Yêu cầu chức năng}
-%TODO
-\subsubsection{Nhóm chức năng giám sát và thu thập}
+\subsubsection{Nhóm chức năng giám sát và đồng bộ dữ liệu}
 \begin{enumerate}[label = {\arabic*.}, leftmargin = 1cm]
-	\item  Hệ thống phải tự động thu thập thông tin về nhiệt độ, độ ẩm không khí và độ ẩm đất thông qua các cảm biến kết nối với mạch YOLO:bit.
-	\item Dữ liệu cảm biến phải được gửi về máy chủ trung tâm thông qua kết nối Wi-fi theo thời gian thực.
-	\item Các thông số cơ bản và trạng thái hệ thống phải được hiển thị trực tiếp trên ma trận LED của YOLO:bit để người dùng theo dõi nhanh.
+	\item Hệ thống phải thu thập và hiển thị dữ liệu nhiệt độ, độ ẩm không khí, độ ẩm đất và cường độ ánh sáng trên giao diện điều khiển với độ trễ cập nhật không quá 5 giây.
+	\item Hệ thống phải đồng bộ dữ liệu cảm biến và trạng thái thiết bị lên giao diện điều khiển với độ trễ không quá 5 giây kể từ khi có thay đổi.
+	\item Người dùng phải có thể theo dõi lịch sử đo, trạng thái hiện tại của thiết bị và các chỉ số tổng quan ngay trên giao diện điều khiển.
 \end{enumerate}
-\subsubsection{Nhóm chức năng phân tích}
+\subsubsection{Nhóm chức năng điều khiển và tự động hóa}
 \begin{enumerate}[label = {\arabic*.}, leftmargin = 1cm]
-	\item Hệ thống phải dự báo được xu hướng (nhiệt độ/ độ ẩm) trong tương lai gần dựa trên dữ liệu đã thu thập để đưa ra cảnh báo sớm.
-	\item Hệ thống phải tự động phân tích hình ảnh lá cây được cung cấp từ người dùng và xác định được cây đang khỏe mạnh hay bị nhiễm loại sâu bệnh cụ thể nào.
+	\item Người dùng phải có thể bật/tắt từ xa các thiết bị được phép điều khiển trên giao diện, như bơm tưới và đèn cảnh báo/chiếu sáng.
+	\item Người dùng thường chỉ được tạo, xem và xóa các lịch điều khiển do chính mình tạo; quản trị viên phải có thể xem và xóa mọi lịch trong hệ thống.
+	\item Các thay đổi điều khiển thủ công hoặc theo lịch phải được cập nhật lại trạng thái thiết bị trên giao diện điều khiển trong vòng 5 giây.
 \end{enumerate}
-\subsubsection{Nhóm chức năng điều khiển và tương tác}
+\subsubsection{Nhóm chức năng tài khoản và quản trị}
 \begin{enumerate}[label = {\arabic*.}, leftmargin = 1cm]
-	\item Tự động kích hoạt hệ thống tưới tiêu dựa trên ngưỡng thông số cài đặt, theo lịch của người dùng hoặc đề xuất từ mô hình AI.
-	\item Cung cấp giao diện web/app để người dùng theo dõi biểu đồ dữ liệu, nhận và xem các thông báo, điều khiển thiết bị từ xa.
+	\item Hệ thống phải hỗ trợ đăng ký, đăng nhập bằng tài khoản nội bộ an toàn và đăng nhập nhanh qua Google.
+	\item Người dùng phải có thể quản lý hồ sơ cá nhân, ảnh đại diện, mật khẩu, tùy chọn giao diện và xem nội dung chính sách bảo mật; quản trị viên có thể cập nhật nội dung chính sách này.
+	\item Quản trị viên phải có thể xem danh sách người dùng, cập nhật thông tin tài khoản, đổi vai trò và khóa/mở khóa tài khoản khi cần thiết.
+\end{enumerate}
+\subsubsection{Nhóm chức năng AI và cảnh báo}
+\begin{enumerate}[label = {\arabic*.}, leftmargin = 1cm]
+	\item Hệ thống phải cho phép tải ảnh lá cây để mô hình AI nhận diện sâu bệnh, trả về tên bệnh, độ tin cậy và gợi ý xử lý.
+	\item Hệ thống phải dự báo độ ẩm không khí cho 60 phút tiếp theo, hiển thị tối thiểu 4 mốc dự báo cách nhau 15 phút dưới dạng danh sách giá trị và biểu đồ xu hướng.
+	\item Hệ thống phải tạo và hiển thị thông báo khi cảm biến vượt ngưỡng cấu hình, khi lịch điều khiển còn không quá 15 phút trước thời điểm kích hoạt hoặc đã thực thi, và khi phát sinh lỗi đăng nhập, đồng bộ hoặc kết nối thiết bị.
 \end{enumerate}
 
 \subsection{Yêu cầu phi chức năng}
-\indent Hệ thống cần có một số yêu cầu phi chức năng liên quan đến hiệu năng, độ chính xác, tính ổn định và khả năng mở rộng nhằm đáp ứng sự thuận tiện cho người dùng và đảm bảo rằng hệ thống hoạt động hiệu quả hơn. Các yêu cầu phi chức năng cụ thể như sau:
 \begin{enumerate}[label = {\arabic*.}, leftmargin = 1cm]
-	\item Hiệu năng: Thời gian phản hồi từ khi cảm biến ghi nhận dữ liệu đến khi hiển thị trên dashboard không vượt quá 3 giây.
-	\item Độ chính xác: Mô hình nhận diện sâu bệnh phải đạt độ chính xác tối thiểu 80\% trên tập dữ liệu thử nghiệm.
-	\item Tính ổn định: Hệ thống phải có khả năng tự động khôi phục lại kết nối khi tín hiệu Wi-fi bị gián đoạn.
-	\item Khả năng mở rộng: Hệ thống có thể tích hợp thêm các loại cảm biến mới (cảm biến ánh sáng, nồng độ $CO_2$) mà không cần thay đổi cấu trúc cốt lõi.
-	\item Dễ sử dụng: Giao diện Dashboard phải trực quan, hỗ trợ ngôn ngữ tiếng Việt để người dùng dễ dàng thao tác.
+	\item Giao diện điều khiển phải hoạt động ổn định trên 2 phiên bản ổn định gần nhất của Chrome, Edge, Firefox và Safari, hỗ trợ song ngữ Việt -- Anh và cập nhật dữ liệu với độ trễ không quá 5 giây.
+	\item Trạng thái cảm biến và thiết bị hiển thị trên giao diện điều khiển phải được đồng bộ với độ trễ không quá 5 giây để tránh sai lệch kéo dài.
+	\item Hệ thống phải áp dụng cơ chế xác thực nội bộ an toàn, phân quyền theo vai trò và hỗ trợ đăng nhập qua Google cho nhu cầu truy cập nhanh.
+	\item Hệ thống phải cho phép bảo trì hoặc mở rộng từng nhóm chức năng chính mà không làm gián đoạn quá 1 phút các chức năng còn lại, đặc biệt là giám sát, điều khiển, chẩn đoán bệnh cây và tra cứu lịch sử.
+	\item Hệ thống phải lưu trữ lịch sử dữ liệu cảm biến, lịch điều khiển, thông báo và kết quả dự báo tối thiểu 12 tháng để phục vụ tra cứu và giám sát vận hành.
 \end{enumerate}
-%TODO

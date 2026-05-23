@@ -14,7 +14,7 @@ int __sys_killall(struct pcb_t *caller, struct sc_regs *regs)
 
     int i = 0;
     data = 0;
-    while (data != -1) 
+    while (data != -1)
     {
         libread(caller, memrg, i, &data);
         proc_name[i] = data;
